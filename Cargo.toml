@@ -23,3 +23,9 @@ nif_2_18 = ["nif_2_17"]
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[package.metadata.docs.rs]
+# Render the full version surface. The ladder is additive, so enabling the top
+# rung pulls in 2.16 and 2.17 as well. (docs.rs builds on Linux, which is unix,
+# so the platform's loader compiles.)
+features = ["nif_2_18"]
