@@ -42,8 +42,11 @@
 //!
 //! # Platform
 //!
-//! Unix only for now. Windows uses a different binding mechanism (a callback
-//! struct passed at load) and is a separate, later effort.
+//! Unix and Windows are both supported; the binding mechanism is chosen at
+//! compile time. On Unix the `enif_*` table is resolved with `dlsym` at load;
+//! on Windows the BEAM passes a callback struct to `nif_init`, which is stored
+//! instead. [`loader::nif_init!`] generates the correctly-typed entry point for
+//! the target, so a NIF's source is identical on both.
 
 // Every `unsafe fn` body must still mark its unsafe operations with an inner
 // `unsafe` block (the default in edition 2024; required here on edition 2021).
