@@ -359,7 +359,7 @@ pub unsafe fn init() -> Result<(), &'static str> {
 
     unsafe fn load<T>(name: &[u8]) -> Result<T, &'static str> {
         assert!(
-            size_of::<T>() == size_of::<*mut c_void>(),
+            std::mem::size_of::<T>() == std::mem::size_of::<*mut c_void>(),
             "load<T>: T must be a function pointer"
         );
         let sym = unsafe { libc::dlsym(libc::RTLD_DEFAULT, name.as_ptr() as *const c_char) };

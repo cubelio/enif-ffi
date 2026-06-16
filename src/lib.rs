@@ -45,6 +45,10 @@
 //! Unix only for now. Windows uses a different binding mechanism (a callback
 //! struct passed at load) and is a separate, later effort.
 
+// Every `unsafe fn` body must still mark its unsafe operations with an inner
+// `unsafe` block (the default in edition 2024; required here on edition 2021).
+#![deny(unsafe_op_in_unsafe_fn)]
+
 mod api;
 mod ffi;
 mod types;

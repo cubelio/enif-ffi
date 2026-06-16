@@ -5,6 +5,8 @@
 //! codegen layer: the `nif_init` entry, the `ErlNifEntry`, the function table,
 //! and a `load` callback that calls [`enif_ffi::init`].
 
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use std::ffi::{c_int, c_void};
 
 use enif_ffi::*;
@@ -77,7 +79,7 @@ unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: T
 // Entry point — the symbol the BEAM dlsym's
 // ---------------------------------------------------------------------------
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn nif_init() -> *const Entry {
     let funcs = Box::leak(Box::new([
         Func {
@@ -126,7 +128,7 @@ pub extern "C" fn nif_init() -> *const Entry {
         unload: None,
         vm_variant: VM_VARIANT.as_ptr(),
         options: 1,
-        sizeof_resource_type_init: size_of::<ResourceTypeInit>(),
+        sizeof_resource_type_init: std::mem::size_of::<ResourceTypeInit>(),
         min_erts: MIN_ERTS_VERSION.as_ptr(),
     }));
     entry as *const Entry
