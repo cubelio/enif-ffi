@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fmt:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --check
+      - run: cargo fmt --check --manifest-path smoke_test/Cargo.toml
+
+  clippy:
+    name: clippy (${{ matrix.features || 'floor' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The feature ladder is additive; testing each rung confirms every
+        # cfg boundary compiles on its own.
+        features: ["", "nif_2_16", "nif_2_17", "nif_2_18"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: clippy
+        run: |
+          FEAT=""
+          [ -n "${{ matrix.features }}" ] && FEAT="--features ${{ matrix.features }}"
+          cargo clippy --all-targets $FEAT -- -D warnings
+
+  docs:
+    name: doc links
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --no-deps --features nif_2_18
+
+  msrv:
+    name: msrv (1.77)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.77"
+      - uses: Swatinem/rust-cache@v2
+      # The whole surface (top rung pulls in the lower ones) must compile on
+      # the declared minimum.
+      - run: cargo build --features nif_2_18
+
+  smoke:
+    name: smoke (OTP ${{ matrix.otp }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ["26", "27"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: smoke_test
+      - name: build the NIF and run it under the BEAM
+        run: |
+          cd smoke_test
+          ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh
