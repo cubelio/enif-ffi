@@ -56,11 +56,53 @@ mod types;
 pub use api::*;
 pub use types::*;
 
+/// Define the NIF library's entry point.
+///
+/// Generates the `nif_init` symbol the BEAM calls at load — with the correct
+/// signature for the target platform — resolves the `enif_*` table (`dlsym` on
+/// Unix, the BEAM-supplied callback table on Windows), then calls `$builder`,
+/// your platform-agnostic function that returns the library descriptor.
+///
+/// `$builder` must be a `fn() -> *const Entry`. It runs once during load, after
+/// the table is resolved, so it (and any wrapper it calls) can use the `enif_*`
+/// API.
+///
+/// ```ignore
+/// enif_ffi::loader::nif_init!(build_entry);
+///
+/// fn build_entry() -> *const enif_ffi::Entry {
+///     // build and leak a 'static ErlNifEntry; see smoke_test/ for a full one
+/// }
+/// ```
+#[macro_export]
+macro_rules! nif_init {
+    ($builder:path) => {
+        #[cfg(unix)]
+        #[no_mangle]
+        pub extern "C" fn nif_init() -> *const $crate::Entry {
+            if unsafe { $crate::loader::init() }.is_err() {
+                return ::core::ptr::null();
+            }
+            $builder()
+        }
+
+        #[cfg(windows)]
+        #[no_mangle]
+        pub extern "C" fn nif_init(
+            callbacks: *const $crate::loader::TWinDynNifCallbacks,
+        ) -> *const $crate::Entry {
+            unsafe { $crate::loader::init_windows(callbacks) };
+            $builder()
+        }
+    };
+}
+
 /// Loader machinery — getting the binding wired up at NIF load time.
 ///
 /// These items are specific to this crate; they have no `enif_*` counterpart.
 /// Everything else in `enif_ffi` mirrors the C NIF API directly, while this
-/// module is the glue that resolves the `enif_*` symbol table at load.
+/// module is the glue that resolves the `enif_*` symbol table at load and
+/// defines the entry point.
 pub mod loader {
     /// Resolve the `enif_*` symbol table via `dlsym` (Unix).
     #[cfg(unix)]
@@ -68,4 +110,6 @@ pub mod loader {
     /// Store the BEAM-supplied callback table (Windows).
     #[cfg(windows)]
     pub use crate::ffi::{init_windows, TWinDynNifCallbacks};
+    /// Define the library entry point; also available at the crate root.
+    pub use crate::nif_init;
 }

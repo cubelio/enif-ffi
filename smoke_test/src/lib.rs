@@ -1,9 +1,9 @@
 //! A minimal NIF written directly against `enif-ffi`, used to prove the raw
 //! binding actually loads and runs inside the BEAM (cargo only type-checks it).
 //!
-//! This is also a worked example of what a consumer must hand-write without a
-//! codegen layer: the `nif_init` entry, the `ErlNifEntry`, the function table,
-//! and a `load` callback that calls [`enif_ffi::loader::init`].
+//! It is also a worked example of a consumer: the function table, the
+//! `ErlNifEntry` builder, and `enif_ffi::loader::nif_init!` to define the
+//! entry point. The same source compiles on Unix and Windows.
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
@@ -65,22 +65,25 @@ unsafe extern "C" fn nif_check_atom(env: *mut Env, argc: c_int, argv: *const Ter
 }
 
 // ---------------------------------------------------------------------------
-// Load callback — resolves the enif_* table
+// Load callback
 // ---------------------------------------------------------------------------
 
+// `nif_init!` resolves the enif_* table before this runs, so there is nothing
+// to do here; a real NIF would use this hook for per-load setup.
 unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: Term) -> c_int {
-    match unsafe { enif_ffi::loader::init() } {
-        Ok(()) => 0,
-        Err(_) => 1, // non-zero => fail the load, BEAM stays up
-    }
+    0
 }
 
 // ---------------------------------------------------------------------------
-// Entry point — the symbol the BEAM dlsym's
+// Entry point
 // ---------------------------------------------------------------------------
 
-#[no_mangle]
-pub extern "C" fn nif_init() -> *const Entry {
+// Generates the platform-correct `nif_init` (no-arg on Unix, a callbacks
+// pointer on Windows), resolves the table, then calls `build_entry` — so this
+// file is identical on every platform.
+enif_ffi::loader::nif_init!(build_entry);
+
+fn build_entry() -> *const Entry {
     let funcs = Box::leak(Box::new([
         Func {
             name: c"add".as_ptr(),
