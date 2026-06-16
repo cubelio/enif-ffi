@@ -10,11 +10,6 @@
 //! the NIF version that introduced it; because the C list is append-only, the
 //! versions form contiguous bands, and the 2.16+ bands are feature-gated.
 
-// The table and `api()` are consumed by the wrapper layer; until that lands
-// they read as dead. The table mirrors the C API, so the allow stays regardless.
-#![allow(dead_code)]
-#![allow(clippy::type_complexity)]
-
 use std::ffi::{c_char, c_int, c_long, c_uint, c_ulong, c_void};
 use std::sync::OnceLock;
 
@@ -104,6 +99,7 @@ pub(crate) struct Api {
     pub realloc: unsafe extern "C" fn(*mut c_void, usize) -> *mut c_void, // 1.0
     pub system_info: unsafe extern "C" fn(*mut SysInfo, usize),           // 1.0
     /// Variadic (`FILE*`, fmt, ...). 1.0
+    #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub fprintf: unsafe extern "C" fn(*mut c_void, *const c_char, ...) -> c_int, // 1.0
     pub inspect_iolist_as_binary: unsafe extern "C" fn(*mut Env, Term, *mut Binary) -> c_int, // 1.0
     pub make_sub_binary: unsafe extern "C" fn(*mut Env, Term, usize, usize) -> Term, // 1.0
@@ -228,6 +224,7 @@ pub(crate) struct Api {
     pub port_command: unsafe extern "C" fn(*mut Env, *const Port, *mut Env, Term) -> c_int,
     pub thread_type: unsafe extern "C" fn() -> c_int,
     /// Variadic (buf, size, fmt, ...). 2.11
+    #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub snprintf: unsafe extern "C" fn(*mut c_char, usize, *const c_char, ...) -> c_int,
 
     // ── NIF 2.12 — select, monitors, hash, whereis ──
@@ -268,8 +265,10 @@ pub(crate) struct Api {
     pub thread_name: unsafe extern "C" fn(Tid) -> *mut c_char,
     /// `va_list` argument approximated as a pointer — slot kept for table order;
     /// not wrapped (Rust has no portable `va_list`). 2.14
+    #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub vfprintf: unsafe extern "C" fn(*mut c_void, *const c_char, *mut c_void) -> c_int,
     /// See [`Self::vfprintf`]. Not wrapped. 2.14
+    #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub vsnprintf: unsafe extern "C" fn(*mut c_char, usize, *const c_char, *mut c_void) -> c_int,
     pub make_map_from_arrays:
         unsafe extern "C" fn(*mut Env, *const Term, *const Term, usize, *mut Term) -> c_int,
