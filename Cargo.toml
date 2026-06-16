@@ -1,0 +1,21 @@
+[package]
+name = "enif-ffi"
+version = "0.1.0"
+edition = "2024"
+authors = ["Lynn Gabbay"]
+license = "MIT OR Apache-2.0"
+description = "Raw FFI bindings to the Erlang NIF API (erl_nif), version-gated by OTP release."
+keywords = ["erlang", "nif", "beam", "otp", "ffi"]
+categories = ["external-ffi-bindings", "api-bindings"]
+
+[features]
+# Floor is NIF 2.15 (OTP 22), always compiled. Each rung is additive and pulls
+# in the one below, so the enabled feature set is always a contiguous prefix
+# `{2.15 ..= N}`. That means every version-gated item carries exactly one cfg
+# (the rung that introduced it), never a disjunction.
+nif_2_16 = []
+nif_2_17 = ["nif_2_16"]
+nif_2_18 = ["nif_2_17"]
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
