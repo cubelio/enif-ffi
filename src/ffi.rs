@@ -22,7 +22,11 @@ use crate::types::*;
 /// One pointer per `enif_*` function, in canonical declaration order.
 ///
 /// All fields are plain `extern "C"` function pointers, so the table is `Sync`
-/// and can live behind a `OnceLock`.
+/// and can live behind a `OnceLock`. `#[repr(C)]` fixes the field order to the
+/// declaration order, which is also the layout of the Windows
+/// `TWinDynNifCallbacks` struct — so on Windows the BEAM-supplied table can be
+/// read straight into this type (see `init_windows`).
+#[repr(C)]
 pub(crate) struct Api {
     // ── NIF 0.1 / 1.0 — initial term, binary, integer, atom, list/tuple core ──
     pub priv_data: unsafe extern "C" fn(*mut Env) -> *mut c_void, // 1.0
@@ -619,12 +623,46 @@ pub unsafe fn init() -> Result<(), &'static str> {
 }
 
 // ---------------------------------------------------------------------------
-// Initialization — non-Unix
+// Initialization — Windows (callback table)
 // ---------------------------------------------------------------------------
 
-/// Windows binds the API through a callback struct passed at load rather than
-/// `dlsym`; that path is not implemented yet.
-#[cfg(not(unix))]
-pub unsafe fn init() -> Result<(), &'static str> {
-    compile_error!("enif-ffi: only Unix is supported at this time");
+/// `TWinDynNifCallbacks` — the callback table the BEAM passes to `nif_init` on
+/// Windows, where the `enif_*` symbols are not resolvable via `dlsym`.
+///
+/// Its leading fields are the `enif_*` function pointers in canonical order —
+/// exactly [`Api`] — followed by an `erts_alc_test` slot the NIF API never
+/// uses. Only the leading `Api` is read.
+#[cfg(windows)]
+#[repr(C)]
+pub struct TWinDynNifCallbacks {
+    funcs: Api,
+    erts_alc_test: *mut c_void,
 }
+
+/// Store the BEAM-supplied callback table (Windows). Idempotent.
+///
+/// Call exactly once from the `nif_init` entry point, before any other function
+/// in this crate (the `nif_init!` macro does this for you).
+///
+/// # Safety
+///
+/// `callbacks` must be the pointer the BEAM passed to `nif_init`, valid for the
+/// duration of the call.
+#[cfg(windows)]
+pub unsafe fn init_windows(callbacks: *const TWinDynNifCallbacks) {
+    if API.get().is_some() {
+        return;
+    }
+    // The function pointers are the leading `funcs` field; copy them out. A
+    // newer BEAM may have appended further fields (plus erts_alc_test); we read
+    // only our prefix.
+    let funcs = unsafe { std::ptr::read(std::ptr::addr_of!((*callbacks).funcs)) };
+    let _ = API.set(funcs);
+}
+
+// ---------------------------------------------------------------------------
+// Unsupported platforms
+// ---------------------------------------------------------------------------
+
+#[cfg(not(any(unix, windows)))]
+compile_error!("enif-ffi supports only Unix and Windows targets");

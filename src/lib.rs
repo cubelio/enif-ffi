@@ -62,5 +62,10 @@ pub use types::*;
 /// Everything else in `enif_ffi` mirrors the C NIF API directly, while this
 /// module is the glue that resolves the `enif_*` symbol table at load.
 pub mod loader {
+    /// Resolve the `enif_*` symbol table via `dlsym` (Unix).
+    #[cfg(unix)]
     pub use crate::ffi::init;
+    /// Store the BEAM-supplied callback table (Windows).
+    #[cfg(windows)]
+    pub use crate::ffi::{init_windows, TWinDynNifCallbacks};
 }
