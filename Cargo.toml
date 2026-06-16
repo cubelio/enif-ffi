@@ -2,9 +2,13 @@
 name = "enif-ffi"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 authors = ["Lynn Gabbay"]
 license = "MIT OR Apache-2.0"
 description = "Raw FFI bindings to the Erlang NIF API (erl_nif), version-gated by OTP release."
+repository = "https://github.com/cubelio/enif-ffi"
+documentation = "https://docs.rs/enif-ffi"
+readme = "README.md"
 keywords = ["erlang", "nif", "beam", "otp", "ffi"]
 categories = ["external-ffi-bindings", "api-bindings"]
 
