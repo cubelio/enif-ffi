@@ -1,0 +1,16 @@
+# Standalone behavioral smoke test: a hand-written NIF over enif-ffi, loaded
+# into a real BEAM. Its own workspace so it doesn't perturb the library crate.
+[package]
+name = "smoke"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "smoke"
+crate-type = ["cdylib"]
+
+[dependencies]
+enif-ffi = { path = ".." }
+
+[workspace]
