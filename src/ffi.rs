@@ -1,7 +1,7 @@
 //! The `enif_*` function-pointer table and the load-time symbol resolver.
 //!
 //! The BEAM does not let a NIF library link against `enif_*` directly; the
-//! symbols are resolved at load time. [`EnifFunctions`] holds one pointer per
+//! symbols are resolved at load time. [`Api`] holds one pointer per
 //! `enif_*` C function, and [`init`] fills it via `dlsym`.
 //!
 //! Field order is the canonical `erl_nif_api_funcs.h` declaration order — the
@@ -10,7 +10,7 @@
 //! the NIF version that introduced it; because the C list is append-only, the
 //! versions form contiguous bands, and the 2.16+ bands are feature-gated.
 
-// The table and `funcs()` are consumed by the wrapper layer; until that lands
+// The table and `api()` are consumed by the wrapper layer; until that lands
 // they read as dead. The table mirrors the C API, so the allow stays regardless.
 #![allow(dead_code)]
 #![allow(clippy::type_complexity)]
@@ -28,7 +28,7 @@ use crate::types::*;
 ///
 /// All fields are plain `extern "C"` function pointers, so the table is `Sync`
 /// and can live behind a `OnceLock`.
-pub(crate) struct EnifFunctions {
+pub(crate) struct Api {
     // ── NIF 0.1 / 1.0 — initial term, binary, integer, atom, list/tuple core ──
     pub priv_data: unsafe extern "C" fn(*mut Env) -> *mut c_void, // 1.0
     pub alloc: unsafe extern "C" fn(usize) -> *mut c_void,        // 1.0
@@ -328,13 +328,12 @@ pub(crate) struct EnifFunctions {
 // Global storage
 // ---------------------------------------------------------------------------
 
-static FUNCS: OnceLock<EnifFunctions> = OnceLock::new();
+static API: OnceLock<Api> = OnceLock::new();
 
 /// The resolved function table. Panics if [`init`] has not run.
 #[inline]
-pub(crate) fn funcs() -> &'static EnifFunctions {
-    FUNCS
-        .get()
+pub(crate) fn api() -> &'static Api {
+    API.get()
         .expect("enif_ffi: not initialized — init() was not called")
 }
 
@@ -355,7 +354,7 @@ pub(crate) fn funcs() -> &'static EnifFunctions {
 /// Must be called from the BEAM's NIF loading context.
 #[cfg(unix)]
 pub unsafe fn init() -> Result<(), &'static str> {
-    if FUNCS.get().is_some() {
+    if API.get().is_some() {
         return Ok(());
     }
 
@@ -390,8 +389,8 @@ pub unsafe fn init() -> Result<(), &'static str> {
         b"enif_make_uint64\0".as_ref(),
     );
 
-    let funcs = unsafe {
-        EnifFunctions {
+    let api = unsafe {
+        Api {
             // 0.1 / 1.0 core
             priv_data: load(b"enif_priv_data\0")?,
             alloc: load(b"enif_alloc\0")?,
@@ -616,7 +615,7 @@ pub unsafe fn init() -> Result<(), &'static str> {
     };
 
     // Another thread may have raced us; either way the table is now set.
-    let _ = FUNCS.set(funcs);
+    let _ = API.set(api);
     Ok(())
 }
 
