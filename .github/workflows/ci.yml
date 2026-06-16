@@ -18,7 +18,7 @@ jobs:
     name: rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -35,7 +35,7 @@ jobs:
         # cfg boundary compiles on its own.
         features: ["", "nif_2_16", "nif_2_17", "nif_2_18"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -52,7 +52,7 @@ jobs:
     env:
       RUSTDOCFLAGS: -D warnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --no-deps --features nif_2_18
@@ -61,7 +61,7 @@ jobs:
     name: msrv (1.77)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.77"
@@ -81,7 +81,7 @@ jobs:
       matrix:
         otp: ["26", "27"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: erlef/setup-beam@v1
         with:
