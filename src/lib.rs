@@ -44,6 +44,8 @@
 //! Unix only for now. Windows uses a different binding mechanism (a callback
 //! struct passed at load) and is a separate, later effort.
 
+mod ffi;
 mod types;
 
+pub use ffi::init;
 pub use types::*;

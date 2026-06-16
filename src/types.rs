@@ -98,7 +98,8 @@ pub struct Entry {
     pub funcs: *mut Func,
     pub load: Option<unsafe extern "C" fn(*mut Env, *mut *mut c_void, Term) -> c_int>,
     pub reload: Option<unsafe extern "C" fn(*mut Env, *mut *mut c_void, Term) -> c_int>,
-    pub upgrade: Option<unsafe extern "C" fn(*mut Env, *mut *mut c_void, *mut *mut c_void, Term) -> c_int>,
+    pub upgrade:
+        Option<unsafe extern "C" fn(*mut Env, *mut *mut c_void, *mut *mut c_void, Term) -> c_int>,
     pub unload: Option<unsafe extern "C" fn(*mut Env, *mut c_void)>,
     /// NIF 2.1 (OTP R14B02).
     pub vm_variant: *const c_char,
