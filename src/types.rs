@@ -7,7 +7,7 @@
 //! Each item notes the NIF version and OTP release that introduced it. The
 //! crate floor is NIF 2.15 (OTP 22); anything newer is gated behind its rung.
 
-use std::ffi::{CStr, c_char, c_int, c_uint, c_void};
+use std::ffi::{c_char, c_int, c_uint, c_void, CStr};
 use std::marker::{PhantomData, PhantomPinned};
 use std::ops::BitOr;
 
