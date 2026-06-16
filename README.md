@@ -1,5 +1,10 @@
 # enif-ffi
 
+[![CI](https://github.com/cubelio/enif-ffi/actions/workflows/ci.yml/badge.svg)](https://github.com/cubelio/enif-ffi/actions/workflows/ci.yml)
+[![docs](https://img.shields.io/badge/docs-cubelio.github.io-blue)](https://cubelio.github.io/enif-ffi/)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
+![MSRV](https://img.shields.io/badge/MSRV-1.77-blue)
+
 Raw FFI bindings to the Erlang NIF API (`erl_nif`) — the unsafe floor for
 writing Erlang NIFs in Rust.
 
