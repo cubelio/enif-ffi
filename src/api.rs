@@ -73,7 +73,7 @@ pub unsafe fn is_ref(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_ref)(env, term) }
 }
 
-/// Initializes the structure pointed to by bin with information about binary term bin_term. The data pointed to by bin is transient and does not need to be released unless it has been later reallocated with enif_realloc_binary .
+/// Initializes the structure pointed to by bin with information about binary term bin_term. The data pointed to by bin is transient and does not need to be released unless it has been later reallocated with enif_realloc_binary.
 ///
 /// NIF 0.1. Wraps [`enif_inspect_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_inspect_binary).
 #[inline]
@@ -158,7 +158,7 @@ pub unsafe fn is_identical(lhs: Term, rhs: Term) -> c_int {
     unsafe { (api().is_identical)(lhs, rhs) }
 }
 
-/// Returns an integer < 0 if lhs < rhs, 0 if lhs = rhs, and > 0 if lhs > rhs. Corresponds to the Erlang operators ==, /=, =<, <, >=, and > (but _not_ =:= or =/=).
+/// Returns an integer < 0 if lhs < rhs, 0 if lhs = rhs, and > 0 if lhs > rhs. Corresponds to the Erlang operators ==, /=, =<, <, >=, and > (but not =:= or =/=).
 ///
 /// NIF 0.1. Wraps [`enif_compare`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_compare).
 #[inline]
@@ -513,7 +513,7 @@ pub unsafe fn system_info(sip: *mut SysInfo, si_size: usize) {
     unsafe { (api().system_info)(sip, si_size) }
 }
 
-/// Initializes the structure pointed to by bin with a continuous buffer with the same byte content as iolist. As with inspect_binary, the data pointed to by bin is transient and does not need to be released unless it has been later reallocated with enif_realloc_binary .
+/// Initializes the structure pointed to by bin with a continuous buffer with the same byte content as iolist. As with inspect_binary, the data pointed to by bin is transient and does not need to be released unless it has been later reallocated with enif_realloc_binary.
 ///
 /// NIF 1.0. Wraps [`enif_inspect_iolist_as_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_inspect_iolist_as_binary).
 #[inline]
@@ -637,7 +637,7 @@ pub unsafe fn is_empty_list(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_empty_list)(env, term) }
 }
 
-/// Creates or takes over a resource type identified by the string name and gives it the destructor function pointed to by dtor. Argument flags can have the following values:.
+/// Creates or takes over a resource type identified by the string name and gives it the destructor function pointed to by dtor.
 ///
 /// NIF 1.0. Wraps [`enif_open_resource_type`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_open_resource_type).
 #[inline]
@@ -742,7 +742,7 @@ pub unsafe fn get_list_length(env: *mut Env, term: Term, len: *mut c_uint) -> c_
     unsafe { (api().get_list_length)(env, term, len) }
 }
 
-/// Create an atom term from the string name with length len and ISO Latin-1 encoding. NUL bytes are treated as any other characters.
+/// Creates an atom term from the string name with length len and ISO Latin-1 encoding. NUL bytes are treated as any other characters.
 ///
 /// NIF 2.0. Wraps [`enif_make_atom_len`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_atom_len).
 #[inline]
@@ -890,7 +890,7 @@ pub unsafe fn make_uint64(env: *mut Env, i: u64) -> Term {
 // NIF 2.2 – 2.4
 // ===========================================================================
 
-/// Return true if term is an exception.
+/// Returns true if term is an exception.
 ///
 /// NIF 2.2. Wraps [`enif_is_exception`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_exception).
 #[inline]
@@ -914,7 +914,7 @@ pub unsafe fn is_number(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_number)(env, term) }
 }
 
-/// `dlopen` a shared library.
+/// Opens a shared library (`dlopen`).
 ///
 /// NIF 2.4. Wraps [`enif_dlopen`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_dlopen).
 #[inline]
@@ -926,7 +926,7 @@ pub unsafe fn dlopen(
     unsafe { (api().dlopen)(lib, err_handler, err_arg) }
 }
 
-/// `dlsym` a symbol.
+/// Resolves a symbol (`dlsym`).
 ///
 /// NIF 2.4. Wraps [`enif_dlsym`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_dlsym).
 #[inline]
@@ -997,7 +997,7 @@ pub unsafe fn get_map_value(env: *mut Env, map: Term, key: Term, value: *mut Ter
     unsafe { (api().get_map_value)(env, map, key, value) }
 }
 
-/// Makes a copy of map map_in and replace the old associated value for key with new_value.
+/// Makes a copy of map map_in and replaces the old associated value for key with new_value.
 ///
 /// NIF 2.6. Wraps [`enif_make_map_update`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_map_update).
 #[inline]
@@ -1243,7 +1243,7 @@ pub unsafe fn port_command(
     unsafe { (api().port_command)(env, to_port, msg_env, msg) }
 }
 
-/// Determine the type of currently executing thread. A positive value indicates a scheduler thread while a negative value or zero indicates another type of thread.
+/// Determines the type of the currently executing thread. A positive value indicates a scheduler thread while a negative value or zero indicates another type of thread.
 ///
 /// NIF 2.11. Wraps [`enif_thread_type`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_type).
 #[inline]
@@ -1341,7 +1341,7 @@ pub unsafe fn whereis_port(env: *mut Env, name: Term, port: *mut Port) -> c_int 
 // NIF 2.13 — I/O queue
 // ===========================================================================
 
-/// Create a new I/O Queue that can be used to store data. opts has to be set to ERL_NIF_IOQ_NORMAL.
+/// Creates a new I/O queue that can be used to store data. opts has to be set to ERL_NIF_IOQ_NORMAL.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_create).
 #[inline]
@@ -1349,7 +1349,7 @@ pub unsafe fn ioq_create(opts: IOQueueOpts) -> *mut IOQueue {
     unsafe { (api().ioq_create)(opts) }
 }
 
-/// Destroy the I/O queue and free all of it's contents.
+/// Destroys the I/O queue and frees all of its contents.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_destroy).
 #[inline]
@@ -1357,7 +1357,7 @@ pub unsafe fn ioq_destroy(q: *mut IOQueue) {
     unsafe { (api().ioq_destroy)(q) }
 }
 
-/// Enqueue the bin into q skipping the first skip bytes.
+/// Enqueues the bin into q skipping the first skip bytes.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_enq_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_enq_binary).
 #[inline]
@@ -1365,7 +1365,7 @@ pub unsafe fn ioq_enq_binary(q: *mut IOQueue, bin: *mut Binary, skip: usize) -> 
     unsafe { (api().ioq_enq_binary)(q, bin, skip) }
 }
 
-/// Enqueue the iovec into q skipping the first skip bytes.
+/// Enqueues the iovec into q skipping the first skip bytes.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_enqv`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_enqv).
 #[inline]
@@ -1373,7 +1373,7 @@ pub unsafe fn ioq_enqv(q: *mut IOQueue, iov: *mut IOVec, skip: usize) -> c_int {
     unsafe { (api().ioq_enqv)(q, iov, skip) }
 }
 
-/// Get the size of q.
+/// Gets the size of q.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_size`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_size).
 #[inline]
@@ -1381,7 +1381,7 @@ pub unsafe fn ioq_size(q: *mut IOQueue) -> usize {
     unsafe { (api().ioq_size)(q) }
 }
 
-/// Dequeue count bytes from the I/O queue. If size is not NULL, the new size of the queue is placed there.
+/// Dequeues count bytes from the I/O queue. If size is not NULL, the new size of the queue is placed there.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_deq`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_deq).
 #[inline]
@@ -1389,7 +1389,7 @@ pub unsafe fn ioq_deq(q: *mut IOQueue, count: usize, size: *mut usize) -> c_int 
     unsafe { (api().ioq_deq)(q, count, size) }
 }
 
-/// Get the I/O queue as a pointer to an array of SysIOVecs. It also returns the number of elements in iovlen.
+/// Gets the I/O queue as a pointer to an array of SysIOVecs. It also returns the number of elements in iovlen.
 ///
 /// NIF 2.13. Wraps [`enif_ioq_peek`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_peek).
 #[inline]
@@ -1423,7 +1423,7 @@ pub unsafe fn free_iovec(iov: *mut IOVec) {
 // NIF 2.14 — ioq_peek_head, *_name, make_map_from_arrays
 // ===========================================================================
 
-/// Get the head of the IO Queue as a binary term.
+/// Gets the head of the I/O queue as a binary term.
 ///
 /// NIF 2.14. Wraps [`enif_ioq_peek_head`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_peek_head).
 #[inline]
@@ -1502,7 +1502,7 @@ pub unsafe fn select_x(
     unsafe { (api().select_x)(env, e, flags, obj, pid, msg, msg_env) }
 }
 
-/// Creates a term identifying the given monitor received from enif_monitor_process .
+/// Creates a term identifying the given monitor received from enif_monitor_process.
 ///
 /// NIF 2.15. Wraps [`enif_make_monitor_term`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_monitor_term).
 #[inline]
@@ -1518,7 +1518,7 @@ pub unsafe fn set_pid_undefined(pid: *mut Pid) {
     unsafe { (api().set_pid_undefined)(pid) }
 }
 
-/// Returns true if pid has been set as undefined by enif_set_pid_undefined .
+/// Returns true if pid has been set as undefined by enif_set_pid_undefined.
 ///
 /// NIF 2.15. Wraps [`enif_is_pid_undefined`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_pid_undefined).
 #[inline]
@@ -1553,7 +1553,7 @@ pub unsafe fn init_resource_type(
     unsafe { (api().init_resource_type)(env, name_str, init, flags, tried) }
 }
 
-/// Call code of a resource type implemented by another NIF module. The atoms rt_module and rt_name identifies the resource type to be called.
+/// Calls code of a resource type implemented by another NIF module. The atoms rt_module and rt_name identify the resource type to be called.
 ///
 /// NIF 2.16. Wraps [`enif_dynamic_resource_call`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_dynamic_resource_call).
 #[cfg(feature = "nif_2_16")]
@@ -1600,7 +1600,7 @@ pub unsafe fn make_new_atom(
     unsafe { (api().make_new_atom)(env, name, atom, encoding) }
 }
 
-/// Create an atom term from string name with length len bytes and encoding.
+/// Creates an atom term from string name with length len bytes and encoding.
 ///
 /// NIF 2.17. Wraps [`enif_make_new_atom_len`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_new_atom_len).
 #[cfg(feature = "nif_2_17")]
@@ -1628,7 +1628,7 @@ pub unsafe fn term_size(term: Term) -> usize {
     unsafe { (api().term_size)(term) }
 }
 
-/// Atom cache index of a term; non-zero on success.
+/// Gets the atom cache index of a term.
 ///
 /// NIF 2.18. Wraps [`enif_get_atom_cache_index`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_atom_cache_index).
 #[cfg(feature = "nif_2_18")]
@@ -1637,7 +1637,7 @@ pub unsafe fn get_atom_cache_index(env: *mut Env, atom: Term, index: *mut c_uint
     unsafe { (api().get_atom_cache_index)(env, atom, index) }
 }
 
-/// Maximum atom cache index.
+/// Returns the maximum atom cache index.
 ///
 /// NIF 2.18. Wraps [`enif_max_atom_cache_index`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_max_atom_cache_index).
 #[cfg(feature = "nif_2_18")]
@@ -1779,7 +1779,7 @@ pub unsafe fn set_option_on_unload_thread(
 // Fixed-arity tuple constructors (call the variadic `enif_make_tuple`)
 // ---------------------------------------------------------------------------
 
-/// Creates a tuple of 1 element(s).
+/// Creates a 1-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[inline]
@@ -1787,7 +1787,7 @@ pub unsafe fn make_tuple1(env: *mut Env, e1: Term) -> Term {
     unsafe { (api().make_tuple)(env, 1, e1) }
 }
 
-/// Creates a tuple of 2 element(s).
+/// Creates a 2-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[inline]
@@ -1795,7 +1795,7 @@ pub unsafe fn make_tuple2(env: *mut Env, e1: Term, e2: Term) -> Term {
     unsafe { (api().make_tuple)(env, 2, e1, e2) }
 }
 
-/// Creates a tuple of 3 element(s).
+/// Creates a 3-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[inline]
@@ -1803,7 +1803,7 @@ pub unsafe fn make_tuple3(env: *mut Env, e1: Term, e2: Term, e3: Term) -> Term {
     unsafe { (api().make_tuple)(env, 3, e1, e2, e3) }
 }
 
-/// Creates a tuple of 4 element(s).
+/// Creates a 4-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[inline]
@@ -1811,7 +1811,7 @@ pub unsafe fn make_tuple4(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term)
     unsafe { (api().make_tuple)(env, 4, e1, e2, e3, e4) }
 }
 
-/// Creates a tuple of 5 element(s).
+/// Creates a 5-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[inline]
@@ -1819,7 +1819,7 @@ pub unsafe fn make_tuple5(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term,
     unsafe { (api().make_tuple)(env, 5, e1, e2, e3, e4, e5) }
 }
 
-/// Creates a tuple of 6 element(s).
+/// Creates a 6-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[inline]
@@ -1835,7 +1835,7 @@ pub unsafe fn make_tuple6(
     unsafe { (api().make_tuple)(env, 6, e1, e2, e3, e4, e5, e6) }
 }
 
-/// Creates a tuple of 7 element(s).
+/// Creates a 7-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[allow(clippy::too_many_arguments)]
@@ -1853,7 +1853,7 @@ pub unsafe fn make_tuple7(
     unsafe { (api().make_tuple)(env, 7, e1, e2, e3, e4, e5, e6, e7) }
 }
 
-/// Creates a tuple of 8 element(s).
+/// Creates a 8-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[allow(clippy::too_many_arguments)]
@@ -1872,7 +1872,7 @@ pub unsafe fn make_tuple8(
     unsafe { (api().make_tuple)(env, 8, e1, e2, e3, e4, e5, e6, e7, e8) }
 }
 
-/// Creates a tuple of 9 element(s).
+/// Creates a 9-tuple.
 ///
 /// NIF 0.1. Wraps [`enif_make_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple).
 #[allow(clippy::too_many_arguments)]
@@ -1896,7 +1896,7 @@ pub unsafe fn make_tuple9(
 // Fixed-arity list constructors (call the variadic `enif_make_list`)
 // ---------------------------------------------------------------------------
 
-/// Creates a list of 1 element(s).
+/// Creates a 1-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[inline]
@@ -1904,7 +1904,7 @@ pub unsafe fn make_list1(env: *mut Env, e1: Term) -> Term {
     unsafe { (api().make_list)(env, 1, e1) }
 }
 
-/// Creates a list of 2 element(s).
+/// Creates a 2-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[inline]
@@ -1912,7 +1912,7 @@ pub unsafe fn make_list2(env: *mut Env, e1: Term, e2: Term) -> Term {
     unsafe { (api().make_list)(env, 2, e1, e2) }
 }
 
-/// Creates a list of 3 element(s).
+/// Creates a 3-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[inline]
@@ -1920,7 +1920,7 @@ pub unsafe fn make_list3(env: *mut Env, e1: Term, e2: Term, e3: Term) -> Term {
     unsafe { (api().make_list)(env, 3, e1, e2, e3) }
 }
 
-/// Creates a list of 4 element(s).
+/// Creates a 4-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[inline]
@@ -1928,7 +1928,7 @@ pub unsafe fn make_list4(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term) 
     unsafe { (api().make_list)(env, 4, e1, e2, e3, e4) }
 }
 
-/// Creates a list of 5 element(s).
+/// Creates a 5-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[inline]
@@ -1936,7 +1936,7 @@ pub unsafe fn make_list5(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term, 
     unsafe { (api().make_list)(env, 5, e1, e2, e3, e4, e5) }
 }
 
-/// Creates a list of 6 element(s).
+/// Creates a 6-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[inline]
@@ -1952,7 +1952,7 @@ pub unsafe fn make_list6(
     unsafe { (api().make_list)(env, 6, e1, e2, e3, e4, e5, e6) }
 }
 
-/// Creates a list of 7 element(s).
+/// Creates a 7-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[allow(clippy::too_many_arguments)]
@@ -1970,7 +1970,7 @@ pub unsafe fn make_list7(
     unsafe { (api().make_list)(env, 7, e1, e2, e3, e4, e5, e6, e7) }
 }
 
-/// Creates a list of 8 element(s).
+/// Creates a 8-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[allow(clippy::too_many_arguments)]
@@ -1989,7 +1989,7 @@ pub unsafe fn make_list8(
     unsafe { (api().make_list)(env, 8, e1, e2, e3, e4, e5, e6, e7, e8) }
 }
 
-/// Creates a list of 9 element(s).
+/// Creates a 9-element list.
 ///
 /// NIF 0.1. Wraps [`enif_make_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list).
 #[allow(clippy::too_many_arguments)]
