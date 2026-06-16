@@ -22,7 +22,7 @@ need the raw API directly.
 - Every `enif_*` function as a thin `unsafe` wrapper.
 - The full `#[repr(C)]` type and constant layer (`Env`, `Term`, `Binary`,
   `Pid`, `ResourceTypeInit`, `SelectFlags`, …).
-- A single `init()` that resolves the `enif_*` symbol table at load time (the
+- A single `loader::init()` that resolves the `enif_*` symbol table at load time (the
   BEAM does not let a NIF library link against `enif_*` directly).
 
 ## Naming
@@ -58,7 +58,7 @@ misbehaving.
 ## Usage
 
 There is no codegen here — you write the `nif_init` entry point and the load
-callback yourself, and call `init()` from the load callback before any wrapper
+callback yourself, and call `loader::init()` from the load callback before any wrapper
 is used. A complete, minimal NIF (plus an Erlang harness that loads and
 exercises it) lives in [`smoke_test/`](smoke_test). The shape:
 
@@ -75,13 +75,13 @@ unsafe extern "C" fn nif_add(env: *mut Env, argc: c_int, argv: *const Term) -> T
 }
 
 unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: Term) -> c_int {
-    match unsafe { enif_ffi::init() } {
+    match unsafe { enif_ffi::loader::init() } {
         Ok(()) => 0,
         Err(_) => 1, // non-zero => fail the load; the VM stays up
     }
 }
 
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn nif_init() -> *const Entry {
     // Build and return a 'static ErlNifEntry referencing your Func table
     // and the `load` callback above. See smoke_test/ for the full version.

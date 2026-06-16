@@ -54,5 +54,13 @@ mod ffi;
 mod types;
 
 pub use api::*;
-pub use ffi::init;
 pub use types::*;
+
+/// Loader machinery — getting the binding wired up at NIF load time.
+///
+/// These items are specific to this crate; they have no `enif_*` counterpart.
+/// Everything else in `enif_ffi` mirrors the C NIF API directly, while this
+/// module is the glue that resolves the `enif_*` symbol table at load.
+pub mod loader {
+    pub use crate::ffi::init;
+}

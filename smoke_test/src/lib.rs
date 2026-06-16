@@ -3,7 +3,7 @@
 //!
 //! This is also a worked example of what a consumer must hand-write without a
 //! codegen layer: the `nif_init` entry, the `ErlNifEntry`, the function table,
-//! and a `load` callback that calls [`enif_ffi::init`].
+//! and a `load` callback that calls [`enif_ffi::loader::init`].
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
@@ -69,7 +69,7 @@ unsafe extern "C" fn nif_check_atom(env: *mut Env, argc: c_int, argv: *const Ter
 // ---------------------------------------------------------------------------
 
 unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: Term) -> c_int {
-    match unsafe { enif_ffi::init() } {
+    match unsafe { enif_ffi::loader::init() } {
         Ok(()) => 0,
         Err(_) => 1, // non-zero => fail the load, BEAM stays up
     }
