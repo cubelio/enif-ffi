@@ -77,8 +77,8 @@ pub unsafe fn is_ref(env: *mut Env, term: Term) -> c_int {
 ///
 /// NIF 0.1. Wraps [`enif_inspect_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_inspect_binary).
 #[inline]
-pub unsafe fn inspect_binary(env: *mut Env, term: Term, bin: *mut Binary) -> c_int {
-    unsafe { (api().inspect_binary)(env, term, bin) }
+pub unsafe fn inspect_binary(env: *mut Env, bin_term: Term, bin: *mut Binary) -> c_int {
+    unsafe { (api().inspect_binary)(env, bin_term, bin) }
 }
 
 /// Allocates a new binary of size `size` bytes. Initializes the structure pointed to by `bin` to refer to the allocated binary.
@@ -133,8 +133,8 @@ pub unsafe fn get_double(env: *mut Env, term: Term, dp: *mut f64) -> c_int {
 ///
 /// NIF 0.1. Wraps [`enif_get_list_cell`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_list_cell).
 #[inline]
-pub unsafe fn get_list_cell(env: *mut Env, term: Term, head: *mut Term, tail: *mut Term) -> c_int {
-    unsafe { (api().get_list_cell)(env, term, head, tail) }
+pub unsafe fn get_list_cell(env: *mut Env, list: Term, head: *mut Term, tail: *mut Term) -> c_int {
+    unsafe { (api().get_list_cell)(env, list, head, tail) }
 }
 
 /// If `term` is a tuple, this function sets `*array` to point to an array containing the elements of the tuple, and sets `*arity` to the number of elements. Notice that the array is read-only and `(*array)[N-1]` is the Nth element of the tuple.
@@ -143,11 +143,11 @@ pub unsafe fn get_list_cell(env: *mut Env, term: Term, head: *mut Term, tail: *m
 #[inline]
 pub unsafe fn get_tuple(
     env: *mut Env,
-    tpl: Term,
+    term: Term,
     arity: *mut c_int,
     array: *mut *const Term,
 ) -> c_int {
-    unsafe { (api().get_tuple)(env, tpl, arity, array) }
+    unsafe { (api().get_tuple)(env, term, arity, array) }
 }
 
 /// Returns `true` if the two terms are identical. Corresponds to the Erlang operators `=:=` and `=/=`.
@@ -231,8 +231,8 @@ pub unsafe fn make_existing_atom(
 ///
 /// NIF 0.1. Wraps [`enif_make_list_cell`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list_cell).
 #[inline]
-pub unsafe fn make_list_cell(env: *mut Env, car: Term, cdr: Term) -> Term {
-    unsafe { (api().make_list_cell)(env, car, cdr) }
+pub unsafe fn make_list_cell(env: *mut Env, head: Term, tail: Term) -> Term {
+    unsafe { (api().make_list_cell)(env, head, tail) }
 }
 
 /// Creates a list containing the characters of the NUL-terminated string `string` with encoding.
@@ -509,8 +509,8 @@ pub unsafe fn realloc(ptr: *mut c_void, size: usize) -> *mut c_void {
 ///
 /// NIF 1.0. Wraps [`enif_system_info`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_system_info).
 #[inline]
-pub unsafe fn system_info(sip: *mut SysInfo, si_size: usize) {
-    unsafe { (api().system_info)(sip, si_size) }
+pub unsafe fn system_info(sys_info_ptr: *mut SysInfo, size: usize) {
+    unsafe { (api().system_info)(sys_info_ptr, size) }
 }
 
 /// Initializes the structure pointed to by `bin` with a continuous buffer with the same byte content as `iolist`. As with `inspect_binary`, the data pointed to by `bin` is transient and does not need to be released unless it has been later reallocated with `enif_realloc_binary`.
@@ -537,10 +537,10 @@ pub unsafe fn get_string(
     env: *mut Env,
     list: Term,
     buf: *mut c_char,
-    len: c_uint,
+    size: c_uint,
     encoding: CharEncoding,
 ) -> c_int {
-    unsafe { (api().get_string)(env, list, buf, len, encoding) }
+    unsafe { (api().get_string)(env, list, buf, size, encoding) }
 }
 
 /// Writes a NUL-terminated string in the buffer pointed to by `buf` of size `size` bytes, consisting of the string representation of the atom `term` with encoding.
@@ -549,12 +549,12 @@ pub unsafe fn get_string(
 #[inline]
 pub unsafe fn get_atom(
     env: *mut Env,
-    atom: Term,
+    term: Term,
     buf: *mut c_char,
-    len: c_uint,
+    size: c_uint,
     encoding: CharEncoding,
 ) -> c_int {
-    unsafe { (api().get_atom)(env, atom, buf, len, encoding) }
+    unsafe { (api().get_atom)(env, term, buf, size, encoding) }
 }
 
 /// Returns `true` if `term` is a fun.
@@ -644,20 +644,20 @@ pub unsafe fn is_empty_list(env: *mut Env, term: Term) -> c_int {
 pub unsafe fn open_resource_type(
     env: *mut Env,
     module_str: *const c_char,
-    name_str: *const c_char,
+    name: *const c_char,
     dtor: Option<unsafe extern "C" fn(*mut Env, *mut c_void)>,
     flags: ResourceFlags,
     tried: *mut ResourceFlags,
 ) -> *mut ResourceType {
-    unsafe { (api().open_resource_type)(env, module_str, name_str, dtor, flags, tried) }
+    unsafe { (api().open_resource_type)(env, module_str, name, dtor, flags, tried) }
 }
 
 /// Allocates a memory-managed resource object of type `type` and size `size` bytes.
 ///
 /// NIF 1.0. Wraps [`enif_alloc_resource`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_alloc_resource).
 #[inline]
-pub unsafe fn alloc_resource(ty: *mut ResourceType, size: usize) -> *mut c_void {
-    unsafe { (api().alloc_resource)(ty, size) }
+pub unsafe fn alloc_resource(type_: *mut ResourceType, size: usize) -> *mut c_void {
+    unsafe { (api().alloc_resource)(type_, size) }
 }
 
 /// Removes a reference to resource object `obj` obtained from `enif_alloc_resource`. The resource object is destructed when the last reference is removed.
@@ -683,10 +683,10 @@ pub unsafe fn make_resource(env: *mut Env, obj: *mut c_void) -> Term {
 pub unsafe fn get_resource(
     env: *mut Env,
     term: Term,
-    ty: *mut ResourceType,
+    type_: *mut ResourceType,
     objp: *mut *mut c_void,
 ) -> c_int {
-    unsafe { (api().get_resource)(env, term, ty, objp) }
+    unsafe { (api().get_resource)(env, term, type_, objp) }
 }
 
 /// Gets the byte size of resource object `obj` obtained by `enif_alloc_resource`.
@@ -727,11 +727,11 @@ pub unsafe fn is_tuple(env: *mut Env, term: Term) -> c_int {
 #[inline]
 pub unsafe fn get_atom_length(
     env: *mut Env,
-    atom: Term,
+    term: Term,
     len: *mut c_uint,
     encoding: CharEncoding,
 ) -> c_int {
-    unsafe { (api().get_atom_length)(env, atom, len, encoding) }
+    unsafe { (api().get_atom_length)(env, term, len, encoding) }
 }
 
 /// Sets `*len` to the length of list `term`.
@@ -805,8 +805,13 @@ pub unsafe fn clear_env(env: *mut Env) {
 ///
 /// NIF 2.0. Wraps [`enif_send`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_send).
 #[inline]
-pub unsafe fn send(env: *mut Env, to_pid: *const Pid, msg_env: *mut Env, msg: Term) -> c_int {
-    unsafe { (api().send)(env, to_pid, msg_env, msg) }
+pub unsafe fn send(
+    caller_env: *mut Env,
+    to_pid: *const Pid,
+    msg_env: *mut Env,
+    msg: Term,
+) -> c_int {
+    unsafe { (api().send)(caller_env, to_pid, msg_env, msg) }
 }
 
 /// Makes a copy of term `src_term`. The copy is created in environment `dst_env`.
@@ -902,8 +907,8 @@ pub unsafe fn is_exception(env: *mut Env, term: Term) -> c_int {
 ///
 /// NIF 2.3. Wraps [`enif_make_reverse_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_reverse_list).
 #[inline]
-pub unsafe fn make_reverse_list(env: *mut Env, term: Term, list: *mut Term) -> c_int {
-    unsafe { (api().make_reverse_list)(env, term, list) }
+pub unsafe fn make_reverse_list(env: *mut Env, list_in: Term, list_out: *mut Term) -> c_int {
+    unsafe { (api().make_reverse_list)(env, list_in, list_out) }
 }
 
 /// Returns `true` if `term` is a number.
@@ -1005,10 +1010,10 @@ pub unsafe fn make_map_update(
     env: *mut Env,
     map_in: Term,
     key: Term,
-    value: Term,
+    new_value: Term,
     map_out: *mut Term,
 ) -> c_int {
-    unsafe { (api().make_map_update)(env, map_in, key, value, map_out) }
+    unsafe { (api().make_map_update)(env, map_in, key, new_value, map_out) }
 }
 
 /// If map `map_in` contains `key`, this function makes a copy of `map_in` in `*map_out`, and removes `key` and the associated value. If map `map_in` does not contain `key`, `*map_out` is set to `map_in`.
@@ -1094,14 +1099,14 @@ pub unsafe fn map_iterator_get_pair(
 /// NIF 2.7. Wraps [`enif_schedule_nif`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_schedule_nif).
 #[inline]
 pub unsafe fn schedule_nif(
-    env: *mut Env,
+    caller_env: *mut Env,
     fun_name: *const c_char,
     flags: c_int,
     fp: unsafe extern "C" fn(*mut Env, c_int, *const Term) -> Term,
     argc: c_int,
     argv: *const Term,
 ) -> Term {
-    unsafe { (api().schedule_nif)(env, fun_name, flags, fp, argc, argv) }
+    unsafe { (api().schedule_nif)(caller_env, fun_name, flags, fp, argc, argv) }
 }
 
 /// Returns `true` if a pending exception is associated with the environment `env`. If `reason` is a `NULL` pointer, ignore it.
@@ -1132,24 +1137,24 @@ pub unsafe fn getenv(key: *const c_char, value: *mut c_char, value_size: *mut us
 ///
 /// NIF 2.10. Wraps [`enif_monotonic_time`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_monotonic_time).
 #[inline]
-pub unsafe fn monotonic_time(unit: TimeUnit) -> Time {
-    unsafe { (api().monotonic_time)(unit) }
+pub unsafe fn monotonic_time(time_unit: TimeUnit) -> Time {
+    unsafe { (api().monotonic_time)(time_unit) }
 }
 
 /// Returns the current time offset between Erlang monotonic time and Erlang system time converted into the `time_unit` passed as argument.
 ///
 /// NIF 2.10. Wraps [`enif_time_offset`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_time_offset).
 #[inline]
-pub unsafe fn time_offset(unit: TimeUnit) -> Time {
-    unsafe { (api().time_offset)(unit) }
+pub unsafe fn time_offset(time_unit: TimeUnit) -> Time {
+    unsafe { (api().time_offset)(time_unit) }
 }
 
 /// Converts the `val` value of time unit `from` to the corresponding value of time unit `to`. The result is rounded using the floor function.
 ///
 /// NIF 2.10. Wraps [`enif_convert_time_unit`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_convert_time_unit).
 #[inline]
-pub unsafe fn convert_time_unit(time: Time, from_unit: TimeUnit, to_unit: TimeUnit) -> Time {
-    unsafe { (api().convert_time_unit)(time, from_unit, to_unit) }
+pub unsafe fn convert_time_unit(val: Time, from: TimeUnit, to: TimeUnit) -> Time {
+    unsafe { (api().convert_time_unit)(val, from, to) }
 }
 
 /// Returns an `erlang:now()` time stamp.
@@ -1223,11 +1228,11 @@ pub unsafe fn term_to_binary(env: *mut Env, term: Term, bin: *mut Binary) -> c_i
 pub unsafe fn binary_to_term(
     env: *mut Env,
     data: *const u8,
-    sz: usize,
+    size: usize,
     term: *mut Term,
     opts: c_uint,
 ) -> usize {
-    unsafe { (api().binary_to_term)(env, data, sz, term, opts) }
+    unsafe { (api().binary_to_term)(env, data, size, term, opts) }
 }
 
 /// Works as `erlang:port_command/2`, except that it is always completely asynchronous.
@@ -1261,13 +1266,13 @@ pub unsafe fn thread_type() -> c_int {
 #[inline]
 pub unsafe fn select(
     env: *mut Env,
-    e: Event,
-    flags: SelectFlags,
+    event: Event,
+    mode: SelectFlags,
     obj: *mut c_void,
     pid: *const Pid,
-    eref: Term,
+    ref_: Term,
 ) -> c_int {
-    unsafe { (api().select)(env, e, flags, obj, pid, eref) }
+    unsafe { (api().select)(env, event, mode, obj, pid, ref_) }
 }
 
 /// Same as `enif_open_resource_type` except it accepts additional callback functions for resource types that are used together with `enif_select` and `enif_monitor_process`.
@@ -1276,12 +1281,12 @@ pub unsafe fn select(
 #[inline]
 pub unsafe fn open_resource_type_x(
     env: *mut Env,
-    name_str: *const c_char,
+    name: *const c_char,
     init: *const ResourceTypeInit,
     flags: ResourceFlags,
     tried: *mut ResourceFlags,
 ) -> *mut ResourceType {
-    unsafe { (api().open_resource_type_x)(env, name_str, init, flags, tried) }
+    unsafe { (api().open_resource_type_x)(env, name, init, flags, tried) }
 }
 
 /// Starts monitoring a process from a resource. When a process is monitored, a process exit results in a call to the provided `down` callback associated with the resource type.
@@ -1289,20 +1294,24 @@ pub unsafe fn open_resource_type_x(
 /// NIF 2.12. Wraps [`enif_monitor_process`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_monitor_process).
 #[inline]
 pub unsafe fn monitor_process(
-    env: *mut Env,
+    caller_env: *mut Env,
     obj: *mut c_void,
-    pid: *const Pid,
-    monitor: *mut Monitor,
+    target_pid: *const Pid,
+    mon: *mut Monitor,
 ) -> c_int {
-    unsafe { (api().monitor_process)(env, obj, pid, monitor) }
+    unsafe { (api().monitor_process)(caller_env, obj, target_pid, mon) }
 }
 
 /// Cancels a monitor created earlier with `enif_monitor_process`. Argument `obj` is a pointer to the resource holding the monitor and `*mon` identifies the monitor.
 ///
 /// NIF 2.12. Wraps [`enif_demonitor_process`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_demonitor_process).
 #[inline]
-pub unsafe fn demonitor_process(env: *mut Env, obj: *mut c_void, monitor: *const Monitor) -> c_int {
-    unsafe { (api().demonitor_process)(env, obj, monitor) }
+pub unsafe fn demonitor_process(
+    caller_env: *mut Env,
+    obj: *mut c_void,
+    mon: *const Monitor,
+) -> c_int {
+    unsafe { (api().demonitor_process)(caller_env, obj, mon) }
 }
 
 /// Compares two `ErlNifMonitor`s. Can also be used to imply some artificial order on monitors, for whatever reason.
@@ -1317,24 +1326,24 @@ pub unsafe fn compare_monitors(monitor1: *const Monitor, monitor2: *const Monito
 ///
 /// NIF 2.12. Wraps [`enif_hash`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_hash).
 #[inline]
-pub unsafe fn hash(hashtype: Hash, term: Term, salt: u64) -> u64 {
-    unsafe { (api().hash)(hashtype, term, salt) }
+pub unsafe fn hash(type_: Hash, term: Term, salt: u64) -> u64 {
+    unsafe { (api().hash)(type_, term, salt) }
 }
 
 /// Looks up a process by its registered name.
 ///
 /// NIF 2.12. Wraps [`enif_whereis_pid`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_whereis_pid).
 #[inline]
-pub unsafe fn whereis_pid(env: *mut Env, name: Term, pid: *mut Pid) -> c_int {
-    unsafe { (api().whereis_pid)(env, name, pid) }
+pub unsafe fn whereis_pid(caller_env: *mut Env, name: Term, pid: *mut Pid) -> c_int {
+    unsafe { (api().whereis_pid)(caller_env, name, pid) }
 }
 
 /// Looks up a port by its registered name.
 ///
 /// NIF 2.12. Wraps [`enif_whereis_port`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_whereis_port).
 #[inline]
-pub unsafe fn whereis_port(env: *mut Env, name: Term, port: *mut Port) -> c_int {
-    unsafe { (api().whereis_port)(env, name, port) }
+pub unsafe fn whereis_port(caller_env: *mut Env, name: Term, port: *mut Port) -> c_int {
+    unsafe { (api().whereis_port)(caller_env, name, port) }
 }
 
 // ===========================================================================
@@ -1369,8 +1378,8 @@ pub unsafe fn ioq_enq_binary(q: *mut IOQueue, bin: *mut Binary, skip: usize) -> 
 ///
 /// NIF 2.13. Wraps [`enif_ioq_enqv`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_enqv).
 #[inline]
-pub unsafe fn ioq_enqv(q: *mut IOQueue, iov: *mut IOVec, skip: usize) -> c_int {
-    unsafe { (api().ioq_enqv)(q, iov, skip) }
+pub unsafe fn ioq_enqv(q: *mut IOQueue, iovec: *mut IOVec, skip: usize) -> c_int {
+    unsafe { (api().ioq_enqv)(q, iovec, skip) }
 }
 
 /// Gets the size of `q`.
@@ -1403,12 +1412,12 @@ pub unsafe fn ioq_peek(q: *mut IOQueue, iovlen: *mut c_int) -> *mut SysIOVec {
 #[inline]
 pub unsafe fn inspect_iovec(
     env: *mut Env,
-    max_length: usize,
+    max_elements: usize,
     iovec_term: Term,
     tail: *mut Term,
     iovec: *mut *mut IOVec,
 ) -> c_int {
-    unsafe { (api().inspect_iovec)(env, max_length, iovec_term, tail, iovec) }
+    unsafe { (api().inspect_iovec)(env, max_elements, iovec_term, tail, iovec) }
 }
 
 /// Frees an io vector returned from `enif_inspect_iovec`. This is needed only if a `NULL` environment is passed to `enif_inspect_iovec`.
@@ -1431,9 +1440,9 @@ pub unsafe fn ioq_peek_head(
     env: *mut Env,
     q: *mut IOQueue,
     size: *mut usize,
-    head: *mut Term,
+    bin_term: *mut Term,
 ) -> c_int {
-    unsafe { (api().ioq_peek_head)(env, q, size, head) }
+    unsafe { (api().ioq_peek_head)(env, q, size, bin_term) }
 }
 
 /// Same as `erl_drv_mutex_name`.
@@ -1545,12 +1554,12 @@ pub unsafe fn term_type(env: *mut Env, term: Term) -> c_int {
 #[inline]
 pub unsafe fn init_resource_type(
     env: *mut Env,
-    name_str: *const c_char,
+    name: *const c_char,
     init: *const ResourceTypeInit,
     flags: ResourceFlags,
     tried: *mut ResourceFlags,
 ) -> *mut ResourceType {
-    unsafe { (api().init_resource_type)(env, name_str, init, flags, tried) }
+    unsafe { (api().init_resource_type)(env, name, init, flags, tried) }
 }
 
 /// Calls code of a resource type implemented by another NIF module. The atoms `rt_module` and `rt_name` identify the resource type to be called.
@@ -1559,13 +1568,13 @@ pub unsafe fn init_resource_type(
 #[cfg(feature = "nif_2_16")]
 #[inline]
 pub unsafe fn dynamic_resource_call(
-    env: *mut Env,
-    module: Term,
-    name: Term,
-    rsrc: Term,
+    caller_env: *mut Env,
+    rt_module: Term,
+    rt_name: Term,
+    resource: Term,
     call_data: *mut c_void,
 ) -> c_int {
-    unsafe { (api().dynamic_resource_call)(env, module, name, rsrc, call_data) }
+    unsafe { (api().dynamic_resource_call)(caller_env, rt_module, rt_name, resource, call_data) }
 }
 
 // ===========================================================================
@@ -1662,8 +1671,8 @@ pub unsafe fn make_pid(_env: *mut Env, pid: Pid) -> Term {
 ///
 /// NIF 2.0. Wraps [`enif_compare_pids`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_compare_pids).
 #[inline]
-pub unsafe fn compare_pids(a: *const Pid, b: *const Pid) -> c_int {
-    unsafe { compare((*a).pid, (*b).pid) }
+pub unsafe fn compare_pids(pid1: *const Pid, pid2: *const Pid) -> c_int {
+    unsafe { compare((*pid1).pid, (*pid2).pid) }
 }
 
 /// Custom-message read select: calls [`select_x`] with `READ | CUSTOM_MSG`.
@@ -1672,7 +1681,7 @@ pub unsafe fn compare_pids(a: *const Pid, b: *const Pid) -> c_int {
 #[inline]
 pub unsafe fn select_read(
     env: *mut Env,
-    e: Event,
+    event: Event,
     obj: *mut c_void,
     pid: *const Pid,
     msg: Term,
@@ -1681,7 +1690,7 @@ pub unsafe fn select_read(
     unsafe {
         select_x(
             env,
-            e,
+            event,
             SelectFlags::READ | SelectFlags::CUSTOM_MSG,
             obj,
             pid,
