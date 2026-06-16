@@ -6,9 +6,10 @@
 //!
 //! # Naming
 //!
-//! Every C prefix is dropped — `enif_`, `ERL_NIF_`, `ErlNif`, `Erl` — because
-//! the whole API lives under the `enif_ffi::` namespace and the prefix would be
-//! pure redundancy:
+//! Every C prefix is dropped — `enif_` (functions), `ERL_NIF_` (the term type,
+//! macros, constants), and `ErlNif` (everything else) — because the whole API
+//! lives under the `enif_ffi::` namespace and the prefix would be pure
+//! redundancy:
 //!
 //! - `ERL_NIF_TERM` → [`Term`], `ErlNifEnv` → [`Env`], `ErlNifBinary` → [`Binary`]
 //! - `enif_make_atom` → `make_atom`, `enif_is_atom` → `is_atom`
