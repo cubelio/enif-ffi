@@ -50,10 +50,6 @@ pub const VM_VARIANT: &CStr = c"beam.vanilla";
 /// NIF 1.0 (OTP R13B04).
 pub type Term = usize;
 
-/// `THE_NON_VALUE` — the BEAM's "no value" marker. No valid term is ever `0`,
-/// so it doubles as an absent-term sentinel.
-pub const NON_VALUE: Term = 0;
-
 // ---------------------------------------------------------------------------
 // Opaque environment
 // ---------------------------------------------------------------------------
@@ -73,6 +69,9 @@ pub struct Env {
 
 /// `ErlNifFunc` — describes one NIF: Erlang name, arity, function pointer, flags.
 /// NIF 1.0 (OTP R13B04); `flags` added in NIF 2.7 (OTP 17.3).
+///
+/// `flags` is `0` for a regular NIF, or [`DIRTY_JOB_CPU_BOUND`] /
+/// [`DIRTY_JOB_IO_BOUND`] (cast to `c_uint`) for a dirty NIF.
 #[repr(C)]
 pub struct Func {
     pub name: *const c_char,
@@ -80,11 +79,6 @@ pub struct Func {
     pub fptr: unsafe extern "C" fn(env: *mut Env, argc: c_int, argv: *const Term) -> Term,
     pub flags: c_uint,
 }
-
-/// [`Func::flags`]: run on a dirty CPU scheduler. NIF 2.7 (OTP 17.3).
-pub const FUNC_DIRTY_CPU: c_uint = 1;
-/// [`Func::flags`]: run on a dirty I/O scheduler. NIF 2.7 (OTP 17.3).
-pub const FUNC_DIRTY_IO: c_uint = 2;
 
 /// `ErlNifEntry` — the library descriptor returned by `nif_init()`.
 /// NIF 1.0 (OTP R13B04), extended in later versions. All tail fields through
@@ -486,11 +480,12 @@ pub const THR_DIRTY_CPU_SCHEDULER: c_int = 2;
 pub const THR_DIRTY_IO_SCHEDULER: c_int = 3;
 
 // ---------------------------------------------------------------------------
-// Schedule NIF flags (enif_schedule_nif)
+// Dirty scheduler flags
 // ---------------------------------------------------------------------------
+// The two `ERL_NIF_DIRTY_JOB_*` constants. They apply to both the
+// `enif_schedule_nif` `flags` argument and the [`Func::flags`] field (the
+// latter is `c_uint`, so cast there); a regular NIF is just `0`.
 
-/// Run on a normal scheduler. NIF 2.7 (OTP 17.3).
-pub const DIRTY_JOB_NORMAL: c_int = 0;
 /// Run on a dirty CPU scheduler. NIF 2.7 (OTP 17.3).
 pub const DIRTY_JOB_CPU_BOUND: c_int = 1;
 /// Run on a dirty I/O scheduler. NIF 2.7 (OTP 17.3).
