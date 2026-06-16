@@ -10,7 +10,7 @@ writing Erlang NIFs in Rust.
 
 `enif-ffi` is a thin, 1:1, all-`unsafe` binding to the `enif_*` C API that the
 BEAM exposes to NIF libraries. It adds no abstractions of its own; it is the
-layer a safe NIF library is built on, much as `rustler_sys` is to `rustler`.
+layer a safe NIF library is built on.
 
 It does **not** provide a safe interface over terms, environments, or
 resources — that belongs in a higher layer. If you want to *write* a NIF, you
