@@ -56,24 +56,9 @@ mod types;
 pub use api::*;
 pub use types::*;
 
-/// Define the NIF library's entry point.
-///
-/// Generates the `nif_init` symbol the BEAM calls at load — with the correct
-/// signature for the target platform — resolves the `enif_*` table (`dlsym` on
-/// Unix, the BEAM-supplied callback table on Windows), then calls `$builder`,
-/// your platform-agnostic function that returns the library descriptor.
-///
-/// `$builder` must be a `fn() -> *const Entry`. It runs once during load, after
-/// the table is resolved, so it (and any wrapper it calls) can use the `enif_*`
-/// API.
-///
-/// ```ignore
-/// enif_ffi::loader::nif_init!(build_entry);
-///
-/// fn build_entry() -> *const enif_ffi::Entry {
-///     // build and leak a 'static ErlNifEntry; see smoke_test/ for a full one
-/// }
-/// ```
+// `#[macro_export]` forces this to the crate root; `#[doc(hidden)]` keeps it out
+// of the docs there. The documented path is the re-export in `loader` below.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! nif_init {
     ($builder:path) => {
@@ -110,6 +95,25 @@ pub mod loader {
     /// Store the BEAM-supplied callback table (Windows).
     #[cfg(windows)]
     pub use crate::ffi::{init_windows, TWinDynNifCallbacks};
-    /// Define the library entry point; also available at the crate root.
+    /// Define the NIF library's entry point.
+    ///
+    /// Generates the `nif_init` symbol the BEAM calls at load — with the correct
+    /// signature for the target platform — resolves the `enif_*` table (`dlsym`
+    /// on Unix, the BEAM-supplied callback table on Windows), then calls
+    /// `$builder`, your platform-agnostic function returning the library
+    /// descriptor.
+    ///
+    /// `$builder` must be a `fn() -> *const `[`Entry`](crate::Entry). It runs
+    /// once during load, after the table is resolved, so it (and any wrapper it
+    /// calls) can use the `enif_*` API.
+    ///
+    /// ```ignore
+    /// enif_ffi::loader::nif_init!(build_entry);
+    ///
+    /// fn build_entry() -> *const enif_ffi::Entry {
+    ///     // build and leak a 'static ErlNifEntry; see smoke_test/ for one
+    /// }
+    /// ```
+    #[doc(inline)]
     pub use crate::nif_init;
 }
