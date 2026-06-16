@@ -66,8 +66,11 @@ jobs:
         with:
           toolchain: "1.77"
       - uses: Swatinem/rust-cache@v2
-      # The whole surface (top rung pulls in the lower ones) must compile on
-      # the declared minimum.
+      # The committed Cargo.lock is format v4 (Cargo 1.78+), which 1.77 can't
+      # parse; drop it so 1.77 resolves its own. The code's real floor is the
+      # `c"..."` literals (1.77) — the whole surface (top rung pulls in the
+      # lower ones) compiles there.
+      - run: rm -f Cargo.lock
       - run: cargo build --features nif_2_18
 
   smoke:
