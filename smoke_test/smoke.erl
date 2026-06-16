@@ -3,7 +3,7 @@
 -on_load(init/0).
 
 init() ->
-    erlang:load_nif("./libsmoke", 0).
+    erlang:load_nif("./smoke_nif", 0).
 
 %% NIF stubs — replaced on load. Reaching these means the NIF failed to load.
 add(_, _) -> erlang:nif_error(not_loaded).

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, windows]
   pull_request:
   workflow_dispatch:
 
@@ -90,6 +90,31 @@ jobs:
         with:
           workspaces: smoke_test
       - name: build the NIF and run it under the BEAM
+        run: |
+          cd smoke_test
+          ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh
+
+  smoke-windows:
+    name: smoke (windows, OTP ${{ matrix.otp }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        otp: ["27"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: smoke_test
+      # The binding stores the BEAM-supplied callback table instead of dlsym;
+      # this is the only thing that actually exercises that path. Git Bash is
+      # present on windows-latest, so the same run.sh works.
+      - name: build the NIF and run it under the Windows BEAM
+        shell: bash
         run: |
           cd smoke_test
           ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh

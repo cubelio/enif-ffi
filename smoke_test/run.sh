@@ -11,9 +11,11 @@ cd "$DIR"
 echo "== building cdylib =="
 cargo build "$@"
 
-SO="$(find target -name 'libsmoke.so' -print -quit)"
-[ -n "$SO" ] || { echo "libsmoke.so not found" >&2; exit 1; }
-cp "$SO" ./libsmoke.so
+# Locate the built cdylib (its name varies by platform) and copy it to a
+# uniform name, so the Erlang harness can load_nif("./smoke_nif") everywhere.
+LIB="$(find target \( -name 'libsmoke.so' -o -name 'smoke.dll' -o -name 'libsmoke.dylib' \) -print -quit)"
+[ -n "$LIB" ] || { echo "smoke cdylib not found under target/" >&2; exit 1; }
+cp "$LIB" "./smoke_nif.${LIB##*.}"
 
 echo "== compiling erlang harness =="
 "$ERL_BIN/erlc" smoke.erl
