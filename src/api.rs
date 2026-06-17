@@ -357,7 +357,11 @@ pub unsafe fn make_ref(env: *mut Env) -> Term {
 // NIF 1.0 — thread primitives
 // ===========================================================================
 
-/// Same as `erl_drv_mutex_create`.
+/// Creates a mutex.
+///
+/// Returns a new mutex, or null on failure. `name` is an identifying string used
+/// in lock checking and debugging. Behaves like the driver's
+/// [`erl_drv_mutex_create`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_mutex_create).
 ///
 /// [`enif_mutex_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_mutex_create) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -365,7 +369,10 @@ pub unsafe fn mutex_create(name: *mut c_char) -> *mut Mutex {
     unsafe { (api().mutex_create)(name) }
 }
 
-/// Same as `erl_drv_mutex_destroy`.
+/// Destroys a mutex.
+///
+/// Frees a mutex created by [`mutex_create`]; it must be unlocked. Like
+/// [`erl_drv_mutex_destroy`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_mutex_destroy).
 ///
 /// [`enif_mutex_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_mutex_destroy) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -373,7 +380,11 @@ pub unsafe fn mutex_destroy(mtx: *mut Mutex) {
     unsafe { (api().mutex_destroy)(mtx) }
 }
 
-/// Same as `erl_drv_mutex_trylock`.
+/// Tries to lock a mutex without blocking.
+///
+/// Locks `mtx` and returns `0` if it is free; returns `EBUSY` without blocking if
+/// it is already held. Like
+/// [`erl_drv_mutex_trylock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_mutex_trylock).
 ///
 /// [`enif_mutex_trylock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_mutex_trylock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -381,7 +392,10 @@ pub unsafe fn mutex_trylock(mtx: *mut Mutex) -> c_int {
     unsafe { (api().mutex_trylock)(mtx) }
 }
 
-/// Same as `erl_drv_mutex_lock`.
+/// Locks a mutex, blocking until it is free.
+///
+/// Re-locking a mutex already held by the calling thread is undefined behavior.
+/// Like [`erl_drv_mutex_lock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_mutex_lock).
 ///
 /// [`enif_mutex_lock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_mutex_lock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -389,7 +403,10 @@ pub unsafe fn mutex_lock(mtx: *mut Mutex) {
     unsafe { (api().mutex_lock)(mtx) }
 }
 
-/// Same as `erl_drv_mutex_unlock`.
+/// Unlocks a mutex.
+///
+/// Releases `mtx`, which must be held by the calling thread. Like
+/// [`erl_drv_mutex_unlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_mutex_unlock).
 ///
 /// [`enif_mutex_unlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_mutex_unlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -397,7 +414,11 @@ pub unsafe fn mutex_unlock(mtx: *mut Mutex) {
     unsafe { (api().mutex_unlock)(mtx) }
 }
 
-/// Same as `erl_drv_cond_create`.
+/// Creates a condition variable.
+///
+/// Returns a new condition variable, or null on failure. `name` identifies it for
+/// debugging. Like
+/// [`erl_drv_cond_create`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_cond_create).
 ///
 /// [`enif_cond_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cond_create) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -405,7 +426,10 @@ pub unsafe fn cond_create(name: *mut c_char) -> *mut Cond {
     unsafe { (api().cond_create)(name) }
 }
 
-/// Same as `erl_drv_cond_destroy`.
+/// Destroys a condition variable.
+///
+/// Frees a condition variable created by [`cond_create`]. Like
+/// [`erl_drv_cond_destroy`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_cond_destroy).
 ///
 /// [`enif_cond_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cond_destroy) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -413,7 +437,9 @@ pub unsafe fn cond_destroy(cnd: *mut Cond) {
     unsafe { (api().cond_destroy)(cnd) }
 }
 
-/// Same as `erl_drv_cond_signal`.
+/// Wakes one thread waiting on a condition variable.
+///
+/// Like [`erl_drv_cond_signal`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_cond_signal).
 ///
 /// [`enif_cond_signal`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cond_signal) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -421,7 +447,9 @@ pub unsafe fn cond_signal(cnd: *mut Cond) {
     unsafe { (api().cond_signal)(cnd) }
 }
 
-/// Same as `erl_drv_cond_broadcast`.
+/// Wakes all threads waiting on a condition variable.
+///
+/// Like [`erl_drv_cond_broadcast`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_cond_broadcast).
 ///
 /// [`enif_cond_broadcast`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cond_broadcast) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -429,7 +457,12 @@ pub unsafe fn cond_broadcast(cnd: *mut Cond) {
     unsafe { (api().cond_broadcast)(cnd) }
 }
 
-/// Same as `erl_drv_cond_wait`.
+/// Waits on a condition variable.
+///
+/// Atomically releases `mtx` and blocks until `cnd` is signaled, then re-acquires
+/// `mtx` before returning. Call it in a loop that re-checks the predicate, since
+/// spurious wakeups are possible. Like
+/// [`erl_drv_cond_wait`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_cond_wait).
 ///
 /// [`enif_cond_wait`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cond_wait) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -437,7 +470,10 @@ pub unsafe fn cond_wait(cnd: *mut Cond, mtx: *mut Mutex) {
     unsafe { (api().cond_wait)(cnd, mtx) }
 }
 
-/// Same as `erl_drv_rwlock_create`.
+/// Creates a read/write lock.
+///
+/// Returns a new rwlock, or null on failure. `name` identifies it for debugging.
+/// Like [`erl_drv_rwlock_create`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_create).
 ///
 /// [`enif_rwlock_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_create) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -445,7 +481,10 @@ pub unsafe fn rwlock_create(name: *mut c_char) -> *mut RWLock {
     unsafe { (api().rwlock_create)(name) }
 }
 
-/// Same as `erl_drv_rwlock_destroy`.
+/// Destroys a read/write lock.
+///
+/// Frees an rwlock created by [`rwlock_create`]; it must be unlocked. Like
+/// [`erl_drv_rwlock_destroy`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_destroy).
 ///
 /// [`enif_rwlock_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_destroy) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -453,7 +492,11 @@ pub unsafe fn rwlock_destroy(rwlck: *mut RWLock) {
     unsafe { (api().rwlock_destroy)(rwlck) }
 }
 
-/// Same as `erl_drv_rwlock_tryrlock`.
+/// Tries to take a read lock without blocking.
+///
+/// Acquires `rwlck` for reading and returns `0` if possible; otherwise returns
+/// `EBUSY` without blocking. Like
+/// [`erl_drv_rwlock_tryrlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_tryrlock).
 ///
 /// [`enif_rwlock_tryrlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_tryrlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -461,7 +504,10 @@ pub unsafe fn rwlock_tryrlock(rwlck: *mut RWLock) -> c_int {
     unsafe { (api().rwlock_tryrlock)(rwlck) }
 }
 
-/// Same as `erl_drv_rwlock_rlock`.
+/// Takes a read lock, blocking until available.
+///
+/// Several readers may hold the lock at once, but never alongside a writer. Like
+/// [`erl_drv_rwlock_rlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_rlock).
 ///
 /// [`enif_rwlock_rlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_rlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -469,7 +515,9 @@ pub unsafe fn rwlock_rlock(rwlck: *mut RWLock) {
     unsafe { (api().rwlock_rlock)(rwlck) }
 }
 
-/// Same as `erl_drv_rwlock_runlock`.
+/// Releases a read lock.
+///
+/// Like [`erl_drv_rwlock_runlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_runlock).
 ///
 /// [`enif_rwlock_runlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_runlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -477,7 +525,11 @@ pub unsafe fn rwlock_runlock(rwlck: *mut RWLock) {
     unsafe { (api().rwlock_runlock)(rwlck) }
 }
 
-/// Same as `erl_drv_rwlock_tryrwlock`.
+/// Tries to take the write lock without blocking.
+///
+/// Acquires `rwlck` exclusively and returns `0` if possible; otherwise returns
+/// `EBUSY` without blocking. Like
+/// [`erl_drv_rwlock_tryrwlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_tryrwlock).
 ///
 /// [`enif_rwlock_tryrwlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_tryrwlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -485,7 +537,10 @@ pub unsafe fn rwlock_tryrwlock(rwlck: *mut RWLock) -> c_int {
     unsafe { (api().rwlock_tryrwlock)(rwlck) }
 }
 
-/// Same as `erl_drv_rwlock_rwlock`.
+/// Takes the write lock, blocking until exclusive.
+///
+/// Excludes all other readers and writers for the duration. Like
+/// [`erl_drv_rwlock_rwlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_rwlock).
 ///
 /// [`enif_rwlock_rwlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_rwlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -493,7 +548,9 @@ pub unsafe fn rwlock_rwlock(rwlck: *mut RWLock) {
     unsafe { (api().rwlock_rwlock)(rwlck) }
 }
 
-/// Same as `erl_drv_rwlock_rwunlock`.
+/// Releases the write lock.
+///
+/// Like [`erl_drv_rwlock_rwunlock`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_rwunlock).
 ///
 /// [`enif_rwlock_rwunlock`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_rwunlock) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -501,7 +558,12 @@ pub unsafe fn rwlock_rwunlock(rwlck: *mut RWLock) {
     unsafe { (api().rwlock_rwunlock)(rwlck) }
 }
 
-/// Same as `erl_drv_tsd_key_create`.
+/// Creates a thread-specific data key.
+///
+/// Allocates a key through which each thread can store its own pointer, writing
+/// it through `key` and returning `0` on success. `name` identifies it for
+/// debugging. Like
+/// [`erl_drv_tsd_key_create`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_tsd_key_create).
 ///
 /// [`enif_tsd_key_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_tsd_key_create) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -509,7 +571,11 @@ pub unsafe fn tsd_key_create(name: *mut c_char, key: *mut TSDKey) -> c_int {
     unsafe { (api().tsd_key_create)(name, key) }
 }
 
-/// Same as `erl_drv_tsd_key_destroy`.
+/// Destroys a thread-specific data key.
+///
+/// Frees a key created by [`tsd_key_create`]; every thread must first have reset
+/// its value for the key to null. Like
+/// [`erl_drv_tsd_key_destroy`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_tsd_key_destroy).
 ///
 /// [`enif_tsd_key_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_tsd_key_destroy) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -517,7 +583,10 @@ pub unsafe fn tsd_key_destroy(key: TSDKey) {
     unsafe { (api().tsd_key_destroy)(key) }
 }
 
-/// Same as `erl_drv_tsd_set`.
+/// Stores the calling thread's value for a key.
+///
+/// Associates `data` with `key` for the current thread only. Like
+/// [`erl_drv_tsd_set`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_tsd_set).
 ///
 /// [`enif_tsd_set`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_tsd_set) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -525,7 +594,11 @@ pub unsafe fn tsd_set(key: TSDKey, data: *mut c_void) {
     unsafe { (api().tsd_set)(key, data) }
 }
 
-/// Same as `erl_drv_tsd_get`.
+/// Reads the calling thread's value for a key.
+///
+/// Returns the pointer last stored for `key` by the current thread, or null if it
+/// has set none. Like
+/// [`erl_drv_tsd_get`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_tsd_get).
 ///
 /// [`enif_tsd_get`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_tsd_get) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -533,7 +606,11 @@ pub unsafe fn tsd_get(key: TSDKey) -> *mut c_void {
     unsafe { (api().tsd_get)(key) }
 }
 
-/// Same as `erl_drv_thread_opts_create`.
+/// Allocates a thread-options block.
+///
+/// Returns options to pass to [`thread_create`], or null on failure. `name`
+/// identifies it for debugging. Like
+/// [`erl_drv_thread_opts_create`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_opts_create).
 ///
 /// [`enif_thread_opts_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_opts_create) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -541,7 +618,10 @@ pub unsafe fn thread_opts_create(name: *mut c_char) -> *mut ThreadOpts {
     unsafe { (api().thread_opts_create)(name) }
 }
 
-/// Same as `erl_drv_thread_opts_destroy`.
+/// Frees a thread-options block.
+///
+/// Releases options created by [`thread_opts_create`]. Like
+/// [`erl_drv_thread_opts_destroy`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_opts_destroy).
 ///
 /// [`enif_thread_opts_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_opts_destroy) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -549,7 +629,12 @@ pub unsafe fn thread_opts_destroy(opts: *mut ThreadOpts) {
     unsafe { (api().thread_opts_destroy)(opts) }
 }
 
-/// Same as `erl_drv_thread_create`.
+/// Spawns a new BEAM-managed thread.
+///
+/// Starts a thread running `func(args)`, writing its id through `tid` and
+/// returning `0` on success. `opts` may be null for defaults. Every created
+/// thread must eventually be reaped with [`thread_join`]. Like
+/// [`erl_drv_thread_create`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_create).
 ///
 /// [`enif_thread_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_create) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -563,7 +648,9 @@ pub unsafe fn thread_create(
     unsafe { (api().thread_create)(name, tid, func, args, opts) }
 }
 
-/// Same as `erl_drv_thread_self`.
+/// Returns the calling thread's identifier.
+///
+/// Like [`erl_drv_thread_self`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_self).
 ///
 /// [`enif_thread_self`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_self) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -571,7 +658,10 @@ pub unsafe fn thread_self() -> Tid {
     unsafe { (api().thread_self)() }
 }
 
-/// Same as `erl_drv_equal_tids`.
+/// Compares two thread identifiers.
+///
+/// Returns a non-zero value if `tid1` and `tid2` refer to the same thread. Like
+/// [`erl_drv_equal_tids`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_equal_tids).
 ///
 /// [`enif_equal_tids`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_equal_tids) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -579,7 +669,11 @@ pub unsafe fn equal_tids(tid1: Tid, tid2: Tid) -> c_int {
     unsafe { (api().equal_tids)(tid1, tid2) }
 }
 
-/// Same as `erl_drv_thread_exit`.
+/// Terminates the calling thread.
+///
+/// Ends the current thread with result `resp`, which a joiner receives through
+/// [`thread_join`]. Valid only on threads started by [`thread_create`]. Like
+/// [`erl_drv_thread_exit`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_exit).
 ///
 /// [`enif_thread_exit`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_exit) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -587,7 +681,11 @@ pub unsafe fn thread_exit(resp: *mut c_void) {
     unsafe { (api().thread_exit)(resp) }
 }
 
-/// Same as `erl_drv_thread_join`.
+/// Waits for a thread to finish and collects its result.
+///
+/// Blocks until thread `tid` exits, writing its result through `respp` (when
+/// non-null) and returning `0`. Like
+/// [`erl_drv_thread_join`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_join).
 ///
 /// [`enif_thread_join`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_join) — NIF 1.0 — OTP R13B04
 #[inline]
