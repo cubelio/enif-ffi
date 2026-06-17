@@ -11,6 +11,14 @@ use std::ffi::{c_char, c_int, c_uint, c_void, CStr};
 use std::marker::{PhantomData, PhantomPinned};
 use std::ops::BitOr;
 
+// `SysIOVec` is platform-divergent; its definition lives in the active platform
+// module. Re-export it here so it sits with the rest of the type mirror and
+// reaches the crate root through `lib.rs`'s `pub use types::*`.
+#[cfg(unix)]
+pub use crate::unix::SysIOVec;
+#[cfg(windows)]
+pub use crate::windows::SysIOVec;
+
 // ---------------------------------------------------------------------------
 // Library version
 // ---------------------------------------------------------------------------
@@ -508,16 +516,7 @@ pub type IOQueueOpts = c_int;
 /// Normal I/O queue mode. NIF 2.13 (OTP 20.1).
 pub const IOQ_NORMAL: IOQueueOpts = 1;
 
-/// `SysIOVec` — iovec on Unix; matches `struct iovec`. NIF 2.13 (OTP 20.1).
-#[cfg(unix)]
-#[repr(C)]
-pub struct SysIOVec {
-    pub iov_base: *mut c_void,
-    pub iov_len: usize,
-}
-
 /// `ErlNifIOVec` — scatter/gather I/O vector. NIF 2.13 (OTP 20.1).
-#[cfg(unix)]
 #[repr(C)]
 pub struct IOVec {
     pub iovcnt: c_int,

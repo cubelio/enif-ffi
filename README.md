@@ -22,8 +22,9 @@ need the raw API directly.
 - Every `enif_*` function as a thin `unsafe` wrapper.
 - The full `#[repr(C)]` type and constant layer (`Env`, `Term`, `Binary`,
   `Pid`, `ResourceTypeInit`, `SelectFlags`, …).
-- A single `loader::init()` that resolves the `enif_*` symbol table at load time (the
-  BEAM does not let a NIF library link against `enif_*` directly).
+- A `nif_init!` macro that emits the platform-correct entry point and resolves
+  the `enif_*` symbol table at load time (the BEAM does not let a NIF library
+  link against `enif_*` directly).
 
 ## Naming
 
@@ -57,10 +58,12 @@ misbehaving.
 
 ## Usage
 
-There is no codegen here — you write the `nif_init` entry point and the load
-callback yourself, and call `loader::init()` from the load callback before any wrapper
-is used. A complete, minimal NIF (plus an Erlang harness that loads and
-exercises it) lives in [`smoke_test/`](smoke_test). The shape:
+There is no codegen here — you write the function table and the `ErlNifEntry`
+builder yourself, and invoke `nif_init!` to emit the entry point. The macro
+resolves the `enif_*` table at load before your builder runs, so no wrapper is
+ever called against an unresolved table. A complete, minimal NIF (plus an
+Erlang harness that loads and exercises it) lives in
+[`smoke_test/`](smoke_test). The shape:
 
 ```rust
 use enif_ffi::*;
@@ -75,14 +78,14 @@ unsafe extern "C" fn nif_add(env: *mut Env, argc: c_int, argv: *const Term) -> T
 }
 
 unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: Term) -> c_int {
-    match unsafe { enif_ffi::loader::init() } {
-        Ok(()) => 0,
-        Err(_) => 1, // non-zero => fail the load; the VM stays up
-    }
+    0 // nothing to do; the symbol table is already resolved
 }
 
-#[no_mangle]
-pub extern "C" fn nif_init() -> *const Entry {
+// Emits the platform-correct `nif_init` (no-arg on Unix, a callbacks pointer on
+// Windows), resolves the table, then calls `build_entry`.
+enif_ffi::nif_init!(build_entry);
+
+fn build_entry() -> *const Entry {
     // Build and return a 'static ErlNifEntry referencing your Func table
     // and the `load` callback above. See smoke_test/ for the full version.
     todo!()
@@ -91,9 +94,10 @@ pub extern "C" fn nif_init() -> *const Entry {
 
 ## Platform
 
-Unix only for now. Windows binds the API through a callback struct passed at
-load rather than `dlsym`; it is a planned addition, and the function table is
-already laid out in the canonical order that mechanism requires.
+Unix and Windows are both supported; the binding mechanism is chosen at compile
+time. On Unix the `enif_*` table is resolved with `dlsym`; on Windows the BEAM
+passes a callback struct to `nif_init`, which the macro stores instead. A NIF's
+source is identical on both.
 
 ## License
 

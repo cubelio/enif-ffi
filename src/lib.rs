@@ -42,8 +42,11 @@
 //!
 //! # Platform
 //!
-//! Unix only for now. Windows uses a different binding mechanism (a callback
-//! struct passed at load) and is a separate, later effort.
+//! Unix and Windows are both supported; the binding mechanism is chosen at
+//! compile time. On Unix the `enif_*` table is resolved with `dlsym` at load;
+//! on Windows the BEAM passes a callback struct to `nif_init`, which is stored
+//! instead. [`nif_init!`] generates the correctly-typed entry point for the
+//! target, so a NIF's source is identical on both.
 
 // Every `unsafe fn` body must still mark its unsafe operations with an inner
 // `unsafe` block (the default in edition 2024; required here on edition 2021).
@@ -53,14 +56,63 @@ mod api;
 mod ffi;
 mod types;
 
+// Platform-specific definitions: the load-time symbol resolver and the
+// divergent `SysIOVec`. Exactly one is compiled. These are `pub` only so the
+// exported `nif_init!` macro can name their `init` (and `TWinDynNifCallbacks`)
+// from a downstream crate; `#[doc(hidden)]` keeps that machinery — `init`
+// included — out of the documented surface.
+#[cfg(unix)]
+#[doc(hidden)]
+pub mod unix;
+#[cfg(windows)]
+#[doc(hidden)]
+pub mod windows;
+
+#[cfg(not(any(unix, windows)))]
+compile_error!("enif-ffi supports only Unix and Windows targets");
+
 pub use api::*;
 pub use types::*;
 
-/// Loader machinery — getting the binding wired up at NIF load time.
+/// Define the NIF library's entry point.
 ///
-/// These items are specific to this crate; they have no `enif_*` counterpart.
-/// Everything else in `enif_ffi` mirrors the C NIF API directly, while this
-/// module is the glue that resolves the `enif_*` symbol table at load.
-pub mod loader {
-    pub use crate::ffi::init;
+/// Generates the `nif_init` symbol the BEAM calls at load — with the correct
+/// signature for the target platform — resolves the `enif_*` table (`dlsym` on
+/// Unix, the BEAM-supplied callback table on Windows), then calls `$builder`,
+/// your platform-agnostic function returning the library descriptor. The symbol
+/// resolution is handled entirely inside the generated entry point; nothing else
+/// in the crate needs to be called to wire the binding up.
+///
+/// `$builder` must be a `fn() -> *const `[`Entry`](crate::Entry). It runs once
+/// during load, after the table is resolved, so it (and any wrapper it calls)
+/// can use the `enif_*` API.
+///
+/// ```ignore
+/// enif_ffi::nif_init!(build_entry);
+///
+/// fn build_entry() -> *const enif_ffi::Entry {
+///     // build and leak a 'static ErlNifEntry; see smoke_test/ for one
+/// }
+/// ```
+#[macro_export]
+macro_rules! nif_init {
+    ($builder:path) => {
+        #[cfg(unix)]
+        #[no_mangle]
+        pub extern "C" fn nif_init() -> *const $crate::Entry {
+            if unsafe { $crate::unix::init() }.is_err() {
+                return ::core::ptr::null();
+            }
+            $builder()
+        }
+
+        #[cfg(windows)]
+        #[no_mangle]
+        pub extern "C" fn nif_init(
+            callbacks: *const $crate::windows::TWinDynNifCallbacks,
+        ) -> *const $crate::Entry {
+            unsafe { $crate::windows::init(callbacks) };
+            $builder()
+        }
+    };
 }
