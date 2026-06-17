@@ -23,6 +23,87 @@
 //! Prefer namespaced use (`enif_ffi::Term`, `enif_ffi::make_atom`) over a glob
 //! import.
 //!
+//! # Who this is for
+//!
+//! Most NIF authors want a *safe* library on top of this — writing NIFs by hand
+//! against a raw, all-`unsafe` table is deliberate, low-level work. Reach for
+//! `enif-ffi` directly when you are building that safe layer, or when you want
+//! the bare `enif_*` surface with no abstraction in the way.
+//!
+//! # A minimal NIF
+//!
+//! A consumer touches three things: the C-ABI functions (the BEAM calling
+//! convention), the [`Entry`] that registers them and carries the load-time
+//! metadata, and [`nif_init!`] to define the entry point. The same source
+//! compiles on Unix and Windows.
+//!
+//! ```no_run
+//! use enif_ffi::*;
+//! use std::ffi::c_int;
+//!
+//! // add(A, B) -> A + B  — decode two integers, return their sum.
+//! unsafe extern "C" fn nif_add(env: *mut Env, argc: c_int, argv: *const Term) -> Term {
+//!     if argc != 2 {
+//!         return unsafe { make_badarg(env) };
+//!     }
+//!     let args = unsafe { std::slice::from_raw_parts(argv, 2) };
+//!     let (mut a, mut b): (c_int, c_int) = (0, 0);
+//!     if unsafe { get_int(env, args[0], &mut a) } == 0
+//!         || unsafe { get_int(env, args[1], &mut b) } == 0
+//!     {
+//!         return unsafe { make_badarg(env) };
+//!     }
+//!     unsafe { make_int(env, a.wrapping_add(b)) }
+//! }
+//!
+//! // mk_tuple() -> {ok, 42}  — build a 2-tuple of an atom and an integer.
+//! unsafe extern "C" fn nif_mk_tuple(env: *mut Env, _argc: c_int, _argv: *const Term) -> Term {
+//!     let ok = unsafe { make_atom(env, c"ok".as_ptr()) };
+//!     let n = unsafe { make_int(env, 42) };
+//!     unsafe { make_tuple2(env, ok, n) }
+//! }
+//!
+//! // Build the library descriptor: the function table plus the version and name
+//! // metadata the BEAM reads at load. Both the table and the `Entry` must outlive
+//! // the call, so they are leaked.
+//! fn build_entry() -> *const Entry {
+//!     let funcs = vec![
+//!         Func { name: c"add".as_ptr(), arity: 2, fptr: nif_add, flags: 0 },
+//!         Func { name: c"mk_tuple".as_ptr(), arity: 0, fptr: nif_mk_tuple, flags: 0 },
+//!     ]
+//!     .leak();
+//!
+//!     Box::leak(Box::new(Entry {
+//!         major: MAJOR_VERSION,
+//!         minor: MINOR_VERSION,
+//!         name: c"example".as_ptr(),
+//!         num_of_funcs: funcs.len() as c_int,
+//!         funcs: funcs.as_mut_ptr(),
+//!         load: None,
+//!         reload: None,
+//!         upgrade: None,
+//!         unload: None,
+//!         vm_variant: VM_VARIANT.as_ptr(),
+//!         options: 1,
+//!         sizeof_resource_type_init: std::mem::size_of::<ResourceTypeInit>(),
+//!         min_erts: MIN_ERTS_VERSION.as_ptr(),
+//!     }))
+//! }
+//!
+//! // Generates the platform-correct `nif_init` symbol the BEAM calls at load.
+//! enif_ffi::nif_init!(build_entry);
+//! ```
+//!
+//! On the Erlang side, once the module has loaded the library:
+//!
+//! ```erlang
+//! example:add(2, 3).    %=> 5
+//! example:mk_tuple().   %=> {ok, 42}
+//! ```
+//!
+//! `smoke_test/` in the repository is the full, CI-exercised version of this:
+//! built and loaded into real BEAMs across every supported NIF version.
+//!
 //! # Version support
 //!
 //! The floor is **NIF 2.15 (OTP 22)** — always compiled. Newer API is opt-in
@@ -96,11 +177,28 @@ pub use types::*;
 /// during load, after the table is resolved, so it (and any wrapper it calls)
 /// can use the `enif_*` API.
 ///
-/// ```ignore
+/// ```no_run
+/// # use enif_ffi::*;
 /// enif_ffi::nif_init!(build_entry);
 ///
 /// fn build_entry() -> *const enif_ffi::Entry {
-///     // build and leak a 'static ErlNifEntry; see smoke_test/ for one
+///     // build and register your functions, then leak a 'static `Entry`;
+///     // see the crate-level example, or `smoke_test/` for a complete one
+/// #   Box::leak(Box::new(Entry {
+/// #       major: MAJOR_VERSION,
+/// #       minor: MINOR_VERSION,
+/// #       name: c"example".as_ptr(),
+/// #       num_of_funcs: 0,
+/// #       funcs: std::ptr::null_mut(),
+/// #       load: None,
+/// #       reload: None,
+/// #       upgrade: None,
+/// #       unload: None,
+/// #       vm_variant: VM_VARIANT.as_ptr(),
+/// #       options: 1,
+/// #       sizeof_resource_type_init: std::mem::size_of::<ResourceTypeInit>(),
+/// #       min_erts: MIN_ERTS_VERSION.as_ptr(),
+/// #   }))
 /// }
 /// ```
 #[macro_export]
