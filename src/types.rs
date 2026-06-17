@@ -610,9 +610,20 @@ impl SelectFlags {
     pub const WRITE: Self = Self(1 << 1);
     /// Stop selecting on the event and trigger the resource stop callback.
     ///
+    /// The safe way to retire an OS event before closing it: any active read/write
+    /// selections are cancelled first, then the resource's stop callback is called
+    /// — directly or scheduled — once no notification can still be in flight. The
+    /// event must not be closed until that callback has run. `pid` and `ref` are
+    /// ignored.
+    ///
     /// [`ERL_NIF_SELECT_STOP`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_STOP) — NIF 2.12 — OTP 20
     pub const STOP: Self = Self(1 << 2);
     /// Cancel a pending read or write select without stopping.
+    ///
+    /// Combine with [`SelectFlags::READ`] and/or [`SelectFlags::WRITE`] to choose
+    /// which selections to cancel; `pid` and `ref` are ignored. The return
+    /// value's `*_CANCELLED` bits report whether each was actually removed or
+    /// whether a notification may already have been sent.
     ///
     /// [`ERL_NIF_SELECT_CANCEL`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_CANCEL) — NIF 2.15 — OTP 22
     pub const CANCEL: Self = Self(1 << 3);
@@ -636,34 +647,63 @@ impl BitOr for SelectFlags {
 
 /// `select`'s stop callback ran on the calling thread.
 ///
+/// A success bit in the value returned by [`select`](crate::select) /
+/// [`select_x`](crate::select_x): the resource's stop callback was invoked
+/// directly, so the event is fully retired on return. Test it with bitwise AND.
+///
 /// [`ERL_NIF_SELECT_STOP_CALLED`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_STOP_CALLED) — NIF 2.12 — OTP 20
 pub const SELECT_STOP_CALLED: c_int = 1 << 0;
-/// `select`'s stop callback was scheduled to run on another thread.
+/// `select`'s stop callback was scheduled to run later.
+///
+/// A success bit: the stop callback could not run synchronously and was scheduled
+/// to run later, on this or another thread, so the event is not yet retired when
+/// [`select`](crate::select) returns.
 ///
 /// [`ERL_NIF_SELECT_STOP_SCHEDULED`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_STOP_SCHEDULED) — NIF 2.12 — OTP 20
 pub const SELECT_STOP_SCHEDULED: c_int = 1 << 1;
 /// `select` was given an invalid event object.
 ///
+/// A failure bit — the [`select`](crate::select) return value is negative —
+/// meaning `event` was not a valid OS event object.
+///
 /// [`ERL_NIF_SELECT_INVALID_EVENT`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_INVALID_EVENT) — NIF 2.12 — OTP 20
 pub const SELECT_INVALID_EVENT: c_int = 1 << 2;
 /// `select` failed to add the event to the poll set.
+///
+/// A failure bit (negative return): the underlying system call could not add the
+/// event object to the poll set.
 ///
 /// [`ERL_NIF_SELECT_FAILED`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_FAILED) — NIF 2.12 — OTP 20
 pub const SELECT_FAILED: c_int = 1 << 3;
 /// A pending read `select` was cancelled.
 ///
+/// A success bit: a read selection was removed by [`SelectFlags::CANCEL`] or
+/// [`SelectFlags::STOP`] and is guaranteed not to produce a further `ready_input`
+/// message.
+///
 /// [`ERL_NIF_SELECT_READ_CANCELLED`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_READ_CANCELLED) — NIF 2.15 — OTP 22
 pub const SELECT_READ_CANCELLED: c_int = 1 << 4;
 /// A pending write `select` was cancelled.
+///
+/// A success bit: a write selection was removed by [`SelectFlags::CANCEL`] or
+/// [`SelectFlags::STOP`] and is guaranteed not to produce a further
+/// `ready_output` message.
 ///
 /// [`ERL_NIF_SELECT_WRITE_CANCELLED`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_WRITE_CANCELLED) — NIF 2.15 — OTP 22
 pub const SELECT_WRITE_CANCELLED: c_int = 1 << 5;
 /// A pending error `select` was cancelled.
 ///
+/// A success bit: an error selection (see [`SelectFlags::ERROR`]) was removed by
+/// [`SelectFlags::CANCEL`] or [`SelectFlags::STOP`].
+///
 /// [`ERL_NIF_SELECT_ERROR_CANCELLED`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_ERROR_CANCELLED) — NIF 2.16 — OTP 24
 #[cfg(feature = "nif_2_16")]
 pub const SELECT_ERROR_CANCELLED: c_int = 1 << 6;
 /// The requested `select` mode is not supported for the event object.
+///
+/// A failure bit (negative return): the requested mode — typically
+/// [`SelectFlags::ERROR`] — is not supported for this event object on this
+/// platform.
 ///
 /// [`ERL_NIF_SELECT_NOTSUP`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_NOTSUP) — NIF 2.16 — OTP 24
 #[cfg(feature = "nif_2_16")]
