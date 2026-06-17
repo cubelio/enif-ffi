@@ -74,12 +74,21 @@ jobs:
       - run: cargo build --features nif_2_18
 
   smoke:
-    name: smoke (OTP ${{ matrix.otp }})
+    name: smoke (OTP ${{ matrix.otp }}, NIF ${{ matrix.nif }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        otp: ["26", "27"]
+        # Each OTP ships a fixed NIF version; build the smoke NIF with the
+        # feature rung that OTP satisfies. The entry then advertises that
+        # version and the loader dlsyms that rung's symbols (init resolves every
+        # Api field and fails the load if one is missing) — so every rung is
+        # load-tested end to end against a matching BEAM, not just the floor.
+        include:
+          - { otp: "22", nif: "2.15", features: "" }
+          - { otp: "24", nif: "2.16", features: "--features enif-ffi/nif_2_16" }
+          - { otp: "26", nif: "2.17", features: "--features enif-ffi/nif_2_17" }
+          - { otp: "29", nif: "2.18", features: "--features enif-ffi/nif_2_18" }
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -92,17 +101,24 @@ jobs:
       - name: build the NIF and run it under the BEAM
         run: |
           cd smoke_test
-          ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh
+          ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh ${{ matrix.features }}
 
   smoke-windows:
-    name: smoke (windows, OTP ${{ matrix.otp }})
+    name: smoke (windows, OTP ${{ matrix.otp }}, NIF ${{ matrix.nif }})
     # windows-latest is now Windows Server 2025 (ImageOS win25-vs2026), which
     # the pinned setup-beam doesn't yet recognize; pin the stable 2022 image.
     runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
-        otp: ["27"]
+        # On Windows the table is read by offset, so each rung appends slots
+        # whose ordering is load-bearing; mirror the unix matrix to exercise
+        # every rung's offsets against a matching BEAM.
+        include:
+          - { otp: "22", nif: "2.15", features: "" }
+          - { otp: "24", nif: "2.16", features: "--features enif-ffi/nif_2_16" }
+          - { otp: "26", nif: "2.17", features: "--features enif-ffi/nif_2_17" }
+          - { otp: "29", nif: "2.18", features: "--features enif-ffi/nif_2_18" }
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -119,4 +135,4 @@ jobs:
         shell: bash
         run: |
           cd smoke_test
-          ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh
+          ERL_BIN="$(dirname "$(command -v erl)")" bash run.sh ${{ matrix.features }}

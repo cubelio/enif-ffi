@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Build the smoke NIF, load it into a real BEAM, and run the assertions.
-# Extra args are forwarded to cargo (e.g. --features ... via -F to enif-ffi is
-# not wired here; the floor surface is enough for the smoke test).
+# Extra args are forwarded to `cargo build`. CI passes the feature rung the
+# target OTP satisfies (e.g. --features enif-ffi/nif_2_18) so the entry
+# advertises that NIF version and the loader resolves that rung's symbols
+# against a matching BEAM. With no args it builds the 2.15 floor.
 set -euo pipefail
 
 ERL_BIN="${ERL_BIN:-/opt/erlang/27/bin}"
