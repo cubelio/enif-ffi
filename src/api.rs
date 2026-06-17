@@ -1514,7 +1514,13 @@ pub unsafe fn map_iterator_get_pair(
 // NIF 2.7 – 2.11
 // ===========================================================================
 
-/// Schedules NIF `fp` to execute. This function allows an application to break up long-running work into multiple regular NIF calls or to schedule a dirty NIF to execute on a dirty scheduler thread.
+/// Reschedules a NIF call onto a regular or dirty scheduler.
+///
+/// Arranges for `fp(env, argc, argv)` to run as a fresh NIF call and returns its
+/// eventual result, which the current NIF must return directly. Used to split
+/// long work into chunks or to move a dirty job onto a dirty scheduler.
+/// `fun_name` names the rescheduled function, and `flags` is `0` for a regular
+/// call or [`DIRTY_JOB_CPU_BOUND`] / [`DIRTY_JOB_IO_BOUND`] for a dirty one.
 ///
 /// [`enif_schedule_nif`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_schedule_nif) — NIF 2.7 — OTP 17.3
 #[inline]
@@ -1529,7 +1535,11 @@ pub unsafe fn schedule_nif(
     unsafe { (api().schedule_nif)(caller_env, fun_name, flags, fp, argc, argv) }
 }
 
-/// Returns `true` if a pending exception is associated with the environment `env`. If `reason` is a `NULL` pointer, ignore it.
+/// Tests whether the environment has a pending exception.
+///
+/// Returns a non-zero value if a [`make_badarg`] or [`raise_exception`] is
+/// pending on `env`. When `reason` is non-null and an exception is pending, its
+/// reason term is written through it.
 ///
 /// [`enif_has_pending_exception`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_has_pending_exception) — NIF 2.8 — OTP 18
 #[inline]
@@ -1537,7 +1547,12 @@ pub unsafe fn has_pending_exception(env: *mut Env, reason: *mut Term) -> c_int {
     unsafe { (api().has_pending_exception)(env, reason) }
 }
 
-/// Creates an error exception with the term `reason` to be returned from a NIF, and associates it with environment `env`. Once a NIF or any function it calls invokes `enif_raise_exception`, the runtime ensures that the exception it creates is raised when the NIF returns, even if the NIF attempts to return a non-exception term instead.
+/// Raises an `error` exception with a given reason on return.
+///
+/// Associates a pending `error:reason` exception with `env`; once invoked, the
+/// runtime raises it when the NIF returns, regardless of the term the NIF
+/// returns. The returned term is a convenience for returning directly. For the
+/// common `badarg` case use [`make_badarg`].
 ///
 /// [`enif_raise_exception`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_raise_exception) — NIF 2.8 — OTP 18
 #[inline]
@@ -1545,7 +1560,12 @@ pub unsafe fn raise_exception(env: *mut Env, reason: Term) -> Term {
     unsafe { (api().raise_exception)(env, reason) }
 }
 
-/// Same as `erl_drv_getenv`.
+/// Reads an OS environment variable.
+///
+/// Copies the value of the environment variable `key` into `value` (capacity
+/// `*value_size`), updates `*value_size` to the length, and returns `0` on
+/// success, a positive value if it does not fit, or a negative value if unset.
+/// Like [`erl_drv_getenv`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_getenv).
 ///
 /// [`enif_getenv`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_getenv) — NIF 2.9 — OTP 18.2
 #[inline]
@@ -1553,7 +1573,11 @@ pub unsafe fn getenv(key: *const c_char, value: *mut c_char, value_size: *mut us
     unsafe { (api().getenv)(key, value, value_size) }
 }
 
-/// Returns the current Erlang monotonic time. Notice that it is not uncommon with negative values.
+/// Returns the current Erlang monotonic time.
+///
+/// Reports monotonic time in the given [`TimeUnit`]. The value never decreases
+/// but is often negative, and is meaningful only relative to other monotonic
+/// readings.
 ///
 /// [`enif_monotonic_time`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_monotonic_time) — NIF 2.10 — OTP 18.3
 #[inline]
@@ -1561,7 +1585,10 @@ pub unsafe fn monotonic_time(time_unit: TimeUnit) -> Time {
     unsafe { (api().monotonic_time)(time_unit) }
 }
 
-/// Returns the current time offset between Erlang monotonic time and Erlang system time converted into the `time_unit` passed as argument.
+/// Returns the offset from monotonic time to system time.
+///
+/// Reports, in the given [`TimeUnit`], the amount to add to an Erlang monotonic
+/// time to obtain the corresponding Erlang system time.
 ///
 /// [`enif_time_offset`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_time_offset) — NIF 2.10 — OTP 18.3
 #[inline]
@@ -1569,7 +1596,10 @@ pub unsafe fn time_offset(time_unit: TimeUnit) -> Time {
     unsafe { (api().time_offset)(time_unit) }
 }
 
-/// Converts the `val` value of time unit `from` to the corresponding value of time unit `to`. The result is rounded using the floor function.
+/// Converts a time value between units.
+///
+/// Returns `val`, interpreted in [`TimeUnit`] `from`, expressed in [`TimeUnit`]
+/// `to`, rounded toward negative infinity.
 ///
 /// [`enif_convert_time_unit`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_convert_time_unit) — NIF 2.10 — OTP 18.3
 #[inline]
@@ -1577,7 +1607,10 @@ pub unsafe fn convert_time_unit(val: Time, from: TimeUnit, to: TimeUnit) -> Time
     unsafe { (api().convert_time_unit)(val, from, to) }
 }
 
-/// Returns an `erlang:now()` time stamp.
+/// Returns an `erlang:now/0` timestamp.
+///
+/// Returns a `{MegaSecs, Secs, MicroSecs}` tuple as `erlang:now/0` would.
+/// Like that function, it is superseded by [`monotonic_time`] and time offsets.
 ///
 /// [`enif_now_time`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_now_time) — NIF 2.11 — OTP 19
 #[inline]
@@ -1585,7 +1618,11 @@ pub unsafe fn now_time(env: *mut Env) -> Term {
     unsafe { (api().now_time)(env) }
 }
 
-/// Returns the CPU time in the same format as `erlang:timestamp()`. The CPU time is the time the current logical CPU has spent executing since some arbitrary point in the past.
+/// Returns the current CPU time as a timestamp.
+///
+/// Returns the time the current logical CPU has spent executing since an
+/// arbitrary past point, in the `{MegaSecs, Secs, MicroSecs}` format of
+/// `erlang:timestamp/0`. Not available on all platforms.
 ///
 /// [`enif_cpu_time`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cpu_time) — NIF 2.11 — OTP 19
 #[inline]
@@ -1593,7 +1630,11 @@ pub unsafe fn cpu_time(env: *mut Env) -> Term {
     unsafe { (api().cpu_time)(env) }
 }
 
-/// Returns a unique integer with the same properties as specified by `erlang:unique_integer/1`.
+/// Returns a unique integer.
+///
+/// Returns an integer unique for the given `properties`
+/// ([`UniqueInteger::POSITIVE`] and/or [`UniqueInteger::MONOTONIC`]), matching
+/// `erlang:unique_integer/1`.
 ///
 /// [`enif_make_unique_integer`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_unique_integer) — NIF 2.11 — OTP 19
 #[inline]
@@ -1601,7 +1642,10 @@ pub unsafe fn make_unique_integer(env: *mut Env, properties: UniqueInteger) -> T
     unsafe { (api().make_unique_integer)(env, properties) }
 }
 
-/// Returns `true` if the currently executing process is currently alive, otherwise `false`.
+/// Tests whether the calling process is still alive.
+///
+/// Returns a non-zero value if the process that scheduled the current NIF call is
+/// still alive, `0` otherwise. Valid only on a NIF call environment.
 ///
 /// [`enif_is_current_process_alive`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_current_process_alive) — NIF 2.11 — OTP 19
 #[inline]
@@ -1609,7 +1653,9 @@ pub unsafe fn is_current_process_alive(env: *mut Env) -> c_int {
     unsafe { (api().is_current_process_alive)(env) }
 }
 
-/// Returns `true` if `pid` is alive.
+/// Tests whether a process is alive.
+///
+/// Returns a non-zero value if the process `pid` is alive, `0` otherwise.
 ///
 /// [`enif_is_process_alive`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_process_alive) — NIF 2.11 — OTP 19
 #[inline]
@@ -1617,7 +1663,9 @@ pub unsafe fn is_process_alive(env: *mut Env, pid: *const Pid) -> c_int {
     unsafe { (api().is_process_alive)(env, pid) }
 }
 
-/// Returns `true` if `port_id` is alive.
+/// Tests whether a port is alive.
+///
+/// Returns a non-zero value if the port `port_id` is alive, `0` otherwise.
 ///
 /// [`enif_is_port_alive`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_port_alive) — NIF 2.11 — OTP 19
 #[inline]
@@ -1625,7 +1673,10 @@ pub unsafe fn is_port_alive(env: *mut Env, port_id: *const Port) -> c_int {
     unsafe { (api().is_port_alive)(env, port_id) }
 }
 
-/// If `term` identifies a node local port, this function initializes the port variable `*port_id` from it and returns `true`. Otherwise returns `false`.
+/// Extracts a node-local port from a term.
+///
+/// If `term` is a port on the local node, writes it through `port_id` and returns
+/// a non-zero value; returns `0` otherwise.
 ///
 /// [`enif_get_local_port`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_local_port) — NIF 2.11 — OTP 19
 #[inline]
@@ -1633,7 +1684,11 @@ pub unsafe fn get_local_port(env: *mut Env, term: Term, port_id: *mut Port) -> c
     unsafe { (api().get_local_port)(env, term, port_id) }
 }
 
-/// Allocates a new binary with `enif_alloc_binary` and stores the result of encoding `term` according to the Erlang external term format.
+/// Encodes a term to the external term format.
+///
+/// Allocates a binary (via [`alloc_binary`]) into `bin` holding the
+/// external-format encoding of `term`, returning a non-zero value on success.
+/// The caller owns `bin` and must hand it to a term or [`release_binary`] it.
 ///
 /// [`enif_term_to_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_term_to_binary) — NIF 2.11 — OTP 19
 #[inline]
@@ -1641,7 +1696,12 @@ pub unsafe fn term_to_binary(env: *mut Env, term: Term, bin: *mut Binary) -> c_i
     unsafe { (api().term_to_binary)(env, term, bin) }
 }
 
-/// Creates a term that is the result of decoding the binary data at `data`, which must be encoded according to the Erlang external term format. No more than `size` bytes are read from `data`.
+/// Decodes a term from the external term format.
+///
+/// Decodes up to `size` bytes at `data`, writing the term through `term` and
+/// returning the number of bytes consumed, or `0` on error. `opts` may be
+/// [`BIN2TERM_SAFE`] to reject input that would create new atoms or other
+/// resources.
 ///
 /// [`enif_binary_to_term`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_binary_to_term) — NIF 2.11 — OTP 19
 #[inline]
@@ -1655,7 +1715,12 @@ pub unsafe fn binary_to_term(
     unsafe { (api().binary_to_term)(env, data, size, term, opts) }
 }
 
-/// Works as `erlang:port_command/2`, except that it is always completely asynchronous.
+/// Sends a command to a port, asynchronously.
+///
+/// Like `erlang:port_command/2` but always fully asynchronous: delivers `msg` to
+/// `to_port`, returning a non-zero value on success. `msg` lives in `msg_env` —
+/// an [`alloc_env`] environment, which the call consumes and clears — or null to
+/// copy a term rooted in the caller's `env`.
 ///
 /// [`enif_port_command`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_port_command) — NIF 2.11 — OTP 19
 #[inline]
@@ -1668,7 +1733,11 @@ pub unsafe fn port_command(
     unsafe { (api().port_command)(env, to_port, msg_env, msg) }
 }
 
-/// Determines the type of the currently executing thread. A positive value indicates a scheduler thread while a negative value or zero indicates another type of thread.
+/// Returns the type of the calling thread.
+///
+/// Returns one of [`THR_UNDEFINED`], [`THR_NORMAL_SCHEDULER`],
+/// [`THR_DIRTY_CPU_SCHEDULER`], or [`THR_DIRTY_IO_SCHEDULER`] for the current
+/// thread.
 ///
 /// [`enif_thread_type`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_type) — NIF 2.11 — OTP 19
 #[inline]
