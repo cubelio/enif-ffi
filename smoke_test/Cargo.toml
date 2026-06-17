@@ -13,4 +13,13 @@ crate-type = ["cdylib"]
 [dependencies]
 enif-ffi = { path = ".." }
 
+# Passthrough rungs mirroring enif-ffi's additive ladder. Building the smoke NIF
+# at a rung both enables that rung on enif-ffi and turns on the matching cfg in
+# this crate, so the version-gated NIFs are compiled and registered in lockstep
+# with the symbols they call.
+[features]
+nif_2_16 = ["enif-ffi/nif_2_16"]
+nif_2_17 = ["nif_2_16", "enif-ffi/nif_2_17"]
+nif_2_18 = ["nif_2_17", "enif-ffi/nif_2_18"]
+
 [workspace]
