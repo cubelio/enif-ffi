@@ -40,8 +40,11 @@ pub unsafe fn init(callbacks: *const TWinDynNifCallbacks) {
     let _ = API.set(api);
 }
 
-/// An iovec; on Windows the fields are swapped and `iov_len` is 32-bit so the
-/// struct can be cast to a `WSABUF`.
+/// A single base/length I/O segment.
+///
+/// The element type of an [`IOVec`](crate::IOVec), as produced by
+/// [`inspect_iovec`](crate::inspect_iovec). On Windows the fields are swapped and
+/// `iov_len` is 32-bit so the struct can be cast directly to a `WSABUF`.
 ///
 /// [`SysIOVec`](https://www.erlang.org/doc/apps/erts/erl_nif.html#SysIOVec) — NIF 2.12 — OTP 20.1
 #[repr(C)]
