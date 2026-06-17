@@ -2074,7 +2074,12 @@ pub unsafe fn make_map_from_arrays(
 // NIF 2.15 — select_x, monitor term, pid-undefined, term_type
 // ===========================================================================
 
-/// Generalized [`select`] with an explicit message and message env.
+/// Selects on an OS event with an explicit notification message.
+///
+/// Like [`select`], but instead of the default `{select, …}` notification it
+/// sends `msg` (which lives in `msg_env`) to `pid`. The [`select_read`],
+/// [`select_write`], and `select_error` wrappers build on this with
+/// [`SelectFlags::CUSTOM_MSG`]. Same return value as [`select`].
 ///
 /// [`enif_select_x`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_select_x) — NIF 2.15 — OTP 22
 #[inline]
@@ -2090,7 +2095,11 @@ pub unsafe fn select_x(
     unsafe { (api().select_x)(env, e, flags, obj, pid, msg, msg_env) }
 }
 
-/// Creates a term identifying the given monitor received from `enif_monitor_process`.
+/// Builds a term identifying a monitor.
+///
+/// Returns a reference term naming the monitor `mon` (from [`monitor_process`]),
+/// equal to the reference delivered to the resource type's `down` callback, so a
+/// NIF can correlate the two.
 ///
 /// [`enif_make_monitor_term`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_monitor_term) — NIF 2.15 — OTP 22
 #[inline]
@@ -2098,7 +2107,10 @@ pub unsafe fn make_monitor_term(env: *mut Env, mon: *const Monitor) -> Term {
     unsafe { (api().make_monitor_term)(env, mon) }
 }
 
-/// Sets an `ErlNifPid` variable as undefined. See `enif_is_pid_undefined`.
+/// Marks a pid value as undefined.
+///
+/// Sets the [`Pid`] at `pid` to the reserved undefined value recognized by
+/// [`is_pid_undefined`] — useful to flag an as-yet-unset pid field in a resource.
 ///
 /// [`enif_set_pid_undefined`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_set_pid_undefined) — NIF 2.15 — OTP 22
 #[inline]
@@ -2106,7 +2118,10 @@ pub unsafe fn set_pid_undefined(pid: *mut Pid) {
     unsafe { (api().set_pid_undefined)(pid) }
 }
 
-/// Returns `true` if `pid` has been set as undefined by `enif_set_pid_undefined`.
+/// Tests whether a pid value is the undefined marker.
+///
+/// Returns a non-zero value if `pid` was set by [`set_pid_undefined`], `0`
+/// otherwise.
 ///
 /// [`enif_is_pid_undefined`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_pid_undefined) — NIF 2.15 — OTP 22
 #[inline]
@@ -2114,7 +2129,11 @@ pub unsafe fn is_pid_undefined(pid: *const Pid) -> c_int {
     unsafe { (api().is_pid_undefined)(pid) }
 }
 
-/// Determines the type of the given term. The term must be an ordinary Erlang term and not one of the special terms returned by `enif_raise_exception`, `enif_schedule_nif`, or similar.
+/// Classifies a term by its top-level type.
+///
+/// Returns the type of `term` as a raw [`TermType`] code (decode it with
+/// [`TermType::from_raw`]). `term` must be an ordinary term, not a special value
+/// from [`raise_exception`], [`schedule_nif`], or similar.
 ///
 /// [`enif_term_type`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_term_type) — NIF 2.15 — OTP 22
 #[inline]
@@ -2126,7 +2145,12 @@ pub unsafe fn term_type(env: *mut Env, term: Term) -> c_int {
 // NIF 2.16 (OTP 24)
 // ===========================================================================
 
-/// Same as `enif_open_resource_type_x` except it accepts an additional callback function for resource types that are used together with `enif_dynamic_resource_call`.
+/// Registers a resource type, including a dyncall callback.
+///
+/// Like [`open_resource_type_x`], but the [`ResourceTypeInit`] table may also
+/// carry the `dyncall` callback invoked by [`dynamic_resource_call`]. Returns the
+/// [`ResourceType`] handle or null; callable only from the module's `load` or
+/// `upgrade` callback.
 ///
 /// [`enif_init_resource_type`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_init_resource_type) — NIF 2.16 — OTP 24
 #[cfg(feature = "nif_2_16")]
@@ -2141,7 +2165,13 @@ pub unsafe fn init_resource_type(
     unsafe { (api().init_resource_type)(env, name, init, flags, tried) }
 }
 
-/// Calls code of a resource type implemented by another NIF module. The atoms `rt_module` and `rt_name` identify the resource type to be called.
+/// Calls into a resource type defined by another module.
+///
+/// Invokes the `dyncall` callback of the resource type identified by the atoms
+/// `rt_module` and `rt_name` on `resource`, passing `call_data` through to it.
+/// Returns `0` if the call was made, or a non-zero value if no such type or
+/// callback exists — a way for modules to expose typed operations on each other's
+/// resources.
 ///
 /// [`enif_dynamic_resource_call`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_dynamic_resource_call) — NIF 2.16 — OTP 24
 #[cfg(feature = "nif_2_16")]
@@ -2160,7 +2190,11 @@ pub unsafe fn dynamic_resource_call(
 // NIF 2.17 (OTP 26)
 // ===========================================================================
 
-/// Sets `*len` to the length (number of bytes excluding terminating NUL byte) of the string `list` with encoding.
+/// Measures the length of an Erlang string.
+///
+/// If `list` is a string, writes its length in bytes — excluding any terminating
+/// NUL, in the given [`CharEncoding`] — through `len` and returns a non-zero
+/// value; returns `0` otherwise. Pair with [`get_string`] to size a buffer first.
 ///
 /// [`enif_get_string_length`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_string_length) — NIF 2.17 — OTP 26
 #[cfg(feature = "nif_2_17")]
@@ -2174,7 +2208,12 @@ pub unsafe fn get_string_length(
     unsafe { (api().get_string_length)(env, list, len, encoding) }
 }
 
-/// Creates an atom term from the NUL-terminated C-string `name` with encoding.
+/// Creates an atom from a Latin-1 or UTF-8 C string.
+///
+/// Creates, or reuses, the atom named by the NUL-terminated `name` in the given
+/// [`CharEncoding`], writing it through `atom` and returning a non-zero value;
+/// returns `0` if the name exceeds the 255-character atom limit. Unlike
+/// [`make_existing_atom`], it creates the atom if it does not yet exist.
 ///
 /// [`enif_make_new_atom`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_new_atom) — NIF 2.17 — OTP 26
 #[cfg(feature = "nif_2_17")]
@@ -2188,7 +2227,10 @@ pub unsafe fn make_new_atom(
     unsafe { (api().make_new_atom)(env, name, atom, encoding) }
 }
 
-/// Creates an atom term from string `name` with length `len` bytes and encoding.
+/// Creates an atom from a length-counted string.
+///
+/// Like [`make_new_atom`], but reads exactly `len` bytes of `name`, so embedded
+/// NUL bytes are ordinary characters.
 ///
 /// [`enif_make_new_atom_len`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_new_atom_len) — NIF 2.17 — OTP 26
 #[cfg(feature = "nif_2_17")]
@@ -2207,7 +2249,11 @@ pub unsafe fn make_new_atom_len(
 // NIF 2.18 (OTP 29)
 // ===========================================================================
 
-/// Gets the number of bytes used to store term. The size does not include ERL_NIF_TERM itself or binary data held by the term.
+/// Returns the heap size a term occupies.
+///
+/// Reports the number of bytes needed to store `term`, excluding the [`Term`]
+/// word itself and any reference-counted binary data it points at — useful to
+/// budget a copy into an [`alloc_env`] environment.
 ///
 /// [`enif_term_size`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_term_size) — NIF 2.18 — OTP 29
 #[cfg(feature = "nif_2_18")]
@@ -2216,7 +2262,10 @@ pub unsafe fn term_size(term: Term) -> usize {
     unsafe { (api().term_size)(term) }
 }
 
-/// Gets the atom cache index of `atom`.
+/// Returns an atom's distribution cache index.
+///
+/// If `atom` is an atom, writes its index within the distribution atom cache
+/// through `index` and returns a non-zero value; returns `0` otherwise.
 ///
 /// [`enif_get_atom_cache_index`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_atom_cache_index) — NIF 2.18 — OTP 29
 #[cfg(feature = "nif_2_18")]
@@ -2225,7 +2274,9 @@ pub unsafe fn get_atom_cache_index(env: *mut Env, atom: Term, index: *mut c_uint
     unsafe { (api().get_atom_cache_index)(env, atom, index) }
 }
 
-/// Returns the maximum atom cache index.
+/// Returns the largest possible atom cache index.
+///
+/// Reports the upper bound on the values [`get_atom_cache_index`] can produce.
 ///
 /// [`enif_max_atom_cache_index`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_max_atom_cache_index) — NIF 2.18 — OTP 29
 #[cfg(feature = "nif_2_18")]
