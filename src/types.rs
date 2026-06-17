@@ -219,8 +219,12 @@ pub struct ResourceFlags(pub c_int);
 
 impl ResourceFlags {
     /// Create a new resource type.
+    ///
+    /// [`ERL_NIF_RT_CREATE`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_RT_CREATE) — NIF 1.0 — OTP R13B04
     pub const CREATE: Self = Self(1);
     /// Take over from an old NIF library during upgrade.
+    ///
+    /// [`ERL_NIF_RT_TAKEOVER`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_RT_TAKEOVER) — NIF 1.0 — OTP R13B04
     pub const TAKEOVER: Self = Self(2);
 }
 
@@ -253,7 +257,13 @@ pub type Event = *mut c_void;
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum MapIteratorEntry {
+    /// Start iterating at the first entry.
+    ///
+    /// [`ERL_NIF_MAP_ITERATOR_FIRST`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_MAP_ITERATOR_FIRST) — NIF 2.6 — OTP 17
     First = 1,
+    /// Start iterating at the last entry.
+    ///
+    /// [`ERL_NIF_MAP_ITERATOR_LAST`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_MAP_ITERATOR_LAST) — NIF 2.6 — OTP 17
     Last = 2,
 }
 
@@ -304,16 +314,49 @@ pub struct MapIterator {
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TermType {
+    /// Matches an atom.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_ATOM`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_ATOM) — NIF 2.15 — OTP 22
     Atom = 1,
+    /// Matches a bitstring (binaries included).
+    ///
+    /// [`ERL_NIF_TERM_TYPE_BITSTRING`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_BITSTRING) — NIF 2.15 — OTP 22
     Bitstring = 2,
+    /// Matches a float.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_FLOAT`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_FLOAT) — NIF 2.15 — OTP 22
     Float = 3,
+    /// Matches a fun.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_FUN`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_FUN) — NIF 2.15 — OTP 22
     Fun = 4,
+    /// Matches an integer.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_INTEGER`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_INTEGER) — NIF 2.15 — OTP 22
     Integer = 5,
+    /// Matches a list (the empty list included).
+    ///
+    /// [`ERL_NIF_TERM_TYPE_LIST`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_LIST) — NIF 2.15 — OTP 22
     List = 6,
+    /// Matches a map.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_MAP`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_MAP) — NIF 2.15 — OTP 22
     Map = 7,
+    /// Matches a pid.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_PID`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_PID) — NIF 2.15 — OTP 22
     Pid = 8,
+    /// Matches a port.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_PORT`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_PORT) — NIF 2.15 — OTP 22
     Port = 9,
+    /// Matches a reference.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_REFERENCE`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_REFERENCE) — NIF 2.15 — OTP 22
     Reference = 10,
+    /// Matches a tuple.
+    ///
+    /// [`ERL_NIF_TERM_TYPE_TUPLE`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_TERM_TYPE_TUPLE) — NIF 2.15 — OTP 22
     Tuple = 11,
 }
 
@@ -348,8 +391,13 @@ impl TermType {
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CharEncoding {
+    /// Latin-1 (ISO-8859-1).
+    ///
+    /// [`ERL_NIF_LATIN1`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_LATIN1) — NIF 1.0 — OTP R13B04
     Latin1 = 1,
-    /// NIF 2.17 (OTP 26.0).
+    /// UTF-8.
+    ///
+    /// [`ERL_NIF_UTF8`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_UTF8) — NIF 2.17 — OTP 26
     #[cfg(feature = "nif_2_17")]
     Utf8 = 2,
 }
@@ -374,9 +422,21 @@ pub const TIME_ERROR: Time = i64::MIN;
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TimeUnit {
+    /// Seconds.
+    ///
+    /// [`ERL_NIF_SEC`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SEC) — NIF 2.10 — OTP 18.3
     Second = 0,
+    /// Milliseconds.
+    ///
+    /// [`ERL_NIF_MSEC`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_MSEC) — NIF 2.10 — OTP 18.3
     Millisecond = 1,
+    /// Microseconds.
+    ///
+    /// [`ERL_NIF_USEC`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_USEC) — NIF 2.10 — OTP 18.3
     Microsecond = 2,
+    /// Nanoseconds.
+    ///
+    /// [`ERL_NIF_NSEC`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_NSEC) — NIF 2.10 — OTP 18.3
     Nanosecond = 3,
 }
 
@@ -393,8 +453,12 @@ pub struct UniqueInteger(pub c_int);
 
 impl UniqueInteger {
     /// Return a positive integer only.
+    ///
+    /// [`ERL_NIF_UNIQUE_POSITIVE`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_UNIQUE_POSITIVE) — NIF 2.11 — OTP 19
     pub const POSITIVE: Self = Self(1 << 0);
     /// Return a strictly monotonic integer.
+    ///
+    /// [`ERL_NIF_UNIQUE_MONOTONIC`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_UNIQUE_MONOTONIC) — NIF 2.11 — OTP 19
     pub const MONOTONIC: Self = Self(1 << 1);
 }
 
@@ -415,7 +479,13 @@ impl BitOr for UniqueInteger {
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Hash {
+    /// Non-portable internal hash; fast, but may change between ERTS versions.
+    ///
+    /// [`ERL_NIF_INTERNAL_HASH`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_INTERNAL_HASH) — NIF 2.12 — OTP 20
     InternalHash = 1,
+    /// Portable `phash2` hash, matching `erlang:phash2/1`.
+    ///
+    /// [`ERL_NIF_PHASH2`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_PHASH2) — NIF 2.12 — OTP 20
     Phash2 = 2,
 }
 
@@ -433,17 +503,29 @@ pub enum Hash {
 pub struct SelectFlags(pub c_int);
 
 impl SelectFlags {
-    /// NIF 2.12 (OTP 20.0).
+    /// Select for read readiness.
+    ///
+    /// [`ERL_NIF_SELECT_READ`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_READ) — NIF 2.12 — OTP 20
     pub const READ: Self = Self(1 << 0);
-    /// NIF 2.12 (OTP 20.0).
+    /// Select for write readiness.
+    ///
+    /// [`ERL_NIF_SELECT_WRITE`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_WRITE) — NIF 2.12 — OTP 20
     pub const WRITE: Self = Self(1 << 1);
-    /// NIF 2.12 (OTP 20.0).
+    /// Stop selecting on the event and trigger the resource stop callback.
+    ///
+    /// [`ERL_NIF_SELECT_STOP`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_STOP) — NIF 2.12 — OTP 20
     pub const STOP: Self = Self(1 << 2);
-    /// NIF 2.15 (OTP 22.0).
+    /// Cancel a pending read or write select without stopping.
+    ///
+    /// [`ERL_NIF_SELECT_CANCEL`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_CANCEL) — NIF 2.15 — OTP 22
     pub const CANCEL: Self = Self(1 << 3);
-    /// NIF 2.15 (OTP 22.0).
+    /// Deliver `msg` as a custom message instead of the default select message.
+    ///
+    /// [`ERL_NIF_SELECT_CUSTOM_MSG`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_CUSTOM_MSG) — NIF 2.15 — OTP 22
     pub const CUSTOM_MSG: Self = Self(1 << 4);
-    /// NIF 2.16 (OTP 24.0).
+    /// Select for error conditions on the event.
+    ///
+    /// [`ERL_NIF_SELECT_ERROR`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_SELECT_ERROR) — NIF 2.16 — OTP 24
     #[cfg(feature = "nif_2_16")]
     pub const ERROR: Self = Self(1 << 5);
 }
@@ -534,10 +616,18 @@ pub struct SysInfo {
 #[repr(i32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Option_ {
+    /// Delay runtime-system halt until running NIF calls have returned.
+    ///
+    /// [`ERL_NIF_OPT_DELAY_HALT`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_OPT_DELAY_HALT) — NIF 2.17 — OTP 26
     DelayHalt = 1,
+    /// Register an on-halt callback, run when the runtime system halts.
+    ///
+    /// [`ERL_NIF_OPT_ON_HALT`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_OPT_ON_HALT) — NIF 2.17 — OTP 26
     OnHalt = 2,
-    /// NIF 2.17 (OTP 27.0) — added within the 2.17 line; passing it to an
-    /// OTP-26 runtime is a caller error.
+    /// Register an on-unload-thread callback. Added within the 2.17 line, so
+    /// passing it to an OTP-26 runtime is a caller error.
+    ///
+    /// [`ERL_NIF_OPT_ON_UNLOAD_THREAD`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ERL_NIF_OPT_ON_UNLOAD_THREAD) — NIF 2.17 — OTP 27
     OnUnloadThread = 3,
 }
 
