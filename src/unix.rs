@@ -283,7 +283,13 @@ pub unsafe fn init() -> Result<(), &'static str> {
     Ok(())
 }
 
-/// `SysIOVec` — iovec; on Unix this is `struct iovec`. NIF 2.13 (OTP 20.1).
+/// A single base/length I/O segment; on Unix this is `struct iovec`.
+///
+/// The element type of an [`IOVec`](crate::IOVec), as produced by
+/// [`inspect_iovec`](crate::inspect_iovec): `iov_base` points at the bytes and
+/// `iov_len` is their count.
+///
+/// [`SysIOVec`](https://www.erlang.org/doc/apps/erts/erl_nif.html#SysIOVec) — NIF 2.12 — OTP 20.1
 #[repr(C)]
 pub struct SysIOVec {
     pub iov_base: *mut c_void,

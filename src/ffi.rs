@@ -7,9 +7,11 @@
 //!
 //! Field order is the canonical `erl_nif_api_funcs.h` declaration order — the
 //! same order as the Windows `TWinDynNifCallbacks` struct, which is read
-//! straight into this type on Windows. Each field is marked with
-//! the NIF version that introduced it; because the C list is append-only, the
-//! versions form contiguous bands, and the 2.16+ bands are feature-gated.
+//! straight into this type on Windows. Fields are grouped into version bands —
+//! `// ── NIF x.y — OTP z — … ──` separators marking the release that added
+//! each run. The C list is append-only (the sole exception is the interleaved
+//! 0.1/1.0 core, reorganized before the rule took hold), so the bands are
+//! contiguous; the 2.16+ bands are feature-gated.
 
 use std::ffi::{c_char, c_int, c_long, c_uint, c_ulong, c_void};
 use std::sync::OnceLock;
@@ -30,40 +32,41 @@ use crate::types::*;
 #[rustfmt::skip]
 #[repr(C)]
 pub(crate) struct Api {
-    // ── NIF 0.1 / 1.0 — initial term, binary, integer, atom, list/tuple core ──
-    pub priv_data:                unsafe extern "C" fn(*mut Env) -> *mut c_void, // 1.0
-    pub alloc:                    unsafe extern "C" fn(usize) -> *mut c_void, // 1.0
-    pub free:                     unsafe extern "C" fn(*mut c_void), // 1.0
-    pub is_atom:                  unsafe extern "C" fn(*mut Env, Term) -> c_int, // 0.1
-    pub is_binary:                unsafe extern "C" fn(*mut Env, Term) -> c_int, // 0.1
-    pub is_ref:                   unsafe extern "C" fn(*mut Env, Term) -> c_int, // 0.1
-    pub inspect_binary:           unsafe extern "C" fn(*mut Env, Term, *mut Binary) -> c_int, // 0.1
-    pub alloc_binary:             unsafe extern "C" fn(usize, *mut Binary) -> c_int, // 0.1
-    pub realloc_binary:           unsafe extern "C" fn(*mut Binary, usize) -> c_int, // 1.0
-    pub release_binary:           unsafe extern "C" fn(*mut Binary), // 2.0
-    pub get_int:                  unsafe extern "C" fn(*mut Env, Term, *mut c_int) -> c_int, // 0.1
-    pub get_ulong:                unsafe extern "C" fn(*mut Env, Term, *mut c_ulong) -> c_int, // 0.1
-    pub get_double:               unsafe extern "C" fn(*mut Env, Term, *mut f64) -> c_int, // 0.1
-    pub get_list_cell:            unsafe extern "C" fn(*mut Env, Term, *mut Term, *mut Term) -> c_int, // 0.1
-    pub get_tuple:                unsafe extern "C" fn(*mut Env, Term, *mut c_int, *mut *const Term) -> c_int, // 0.1
-    pub is_identical:             unsafe extern "C" fn(Term, Term) -> c_int, // 0.1
-    pub compare:                  unsafe extern "C" fn(Term, Term) -> c_int, // 0.1
-    pub make_binary:              unsafe extern "C" fn(*mut Env, *mut Binary) -> Term, // 0.1
-    pub make_badarg:              unsafe extern "C" fn(*mut Env) -> Term, // 0.1
-    pub make_int:                 unsafe extern "C" fn(*mut Env, c_int) -> Term, // 0.1
-    pub make_ulong:               unsafe extern "C" fn(*mut Env, c_ulong) -> Term, // 0.1
-    pub make_double:              unsafe extern "C" fn(*mut Env, f64) -> Term, // 0.1
-    pub make_atom:                unsafe extern "C" fn(*mut Env, *const c_char) -> Term, // 0.1
-    pub make_existing_atom:       unsafe extern "C" fn(*mut Env, *const c_char, *mut Term, CharEncoding) -> c_int, // 0.1
-    /// Variadic; the `make_tupleN` wrappers call this with N args. 0.1
-    pub make_tuple:               unsafe extern "C" fn(*mut Env, c_uint, ...) -> Term, // 0.1
-    /// Variadic; the `make_listN` wrappers call this with N args. 0.1
-    pub make_list:                unsafe extern "C" fn(*mut Env, c_uint, ...) -> Term, // 0.1
-    pub make_list_cell:           unsafe extern "C" fn(*mut Env, Term, Term) -> Term, // 0.1
-    pub make_string:              unsafe extern "C" fn(*mut Env, *const c_char, CharEncoding) -> Term, // 0.1
-    pub make_ref:                 unsafe extern "C" fn(*mut Env) -> Term, // 0.1
 
-    // ── NIF 1.0 — thread primitives (mutex, cond, rwlock, tsd, thread) ──
+    // ── NIF 0.1 / 1.0 — OTP R13B03 / R13B04 — initial term, binary, integer, atom, list/tuple core ──
+    pub priv_data:                unsafe extern "C" fn(*mut Env) -> *mut c_void,
+    pub alloc:                    unsafe extern "C" fn(usize) -> *mut c_void,
+    pub free:                     unsafe extern "C" fn(*mut c_void),
+    pub is_atom:                  unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub is_binary:                unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub is_ref:                   unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub inspect_binary:           unsafe extern "C" fn(*mut Env, Term, *mut Binary) -> c_int,
+    pub alloc_binary:             unsafe extern "C" fn(usize, *mut Binary) -> c_int,
+    pub realloc_binary:           unsafe extern "C" fn(*mut Binary, usize) -> c_int,
+    pub release_binary:           unsafe extern "C" fn(*mut Binary),
+    pub get_int:                  unsafe extern "C" fn(*mut Env, Term, *mut c_int) -> c_int,
+    pub get_ulong:                unsafe extern "C" fn(*mut Env, Term, *mut c_ulong) -> c_int,
+    pub get_double:               unsafe extern "C" fn(*mut Env, Term, *mut f64) -> c_int,
+    pub get_list_cell:            unsafe extern "C" fn(*mut Env, Term, *mut Term, *mut Term) -> c_int,
+    pub get_tuple:                unsafe extern "C" fn(*mut Env, Term, *mut c_int, *mut *const Term) -> c_int,
+    pub is_identical:             unsafe extern "C" fn(Term, Term) -> c_int,
+    pub compare:                  unsafe extern "C" fn(Term, Term) -> c_int,
+    pub make_binary:              unsafe extern "C" fn(*mut Env, *mut Binary) -> Term,
+    pub make_badarg:              unsafe extern "C" fn(*mut Env) -> Term,
+    pub make_int:                 unsafe extern "C" fn(*mut Env, c_int) -> Term,
+    pub make_ulong:               unsafe extern "C" fn(*mut Env, c_ulong) -> Term,
+    pub make_double:              unsafe extern "C" fn(*mut Env, f64) -> Term,
+    pub make_atom:                unsafe extern "C" fn(*mut Env, *const c_char) -> Term,
+    pub make_existing_atom:       unsafe extern "C" fn(*mut Env, *const c_char, *mut Term, CharEncoding) -> c_int,
+    /// Variadic; the `make_tupleN` wrappers call this with N args.
+    pub make_tuple:               unsafe extern "C" fn(*mut Env, c_uint, ...) -> Term,
+    /// Variadic; the `make_listN` wrappers call this with N args.
+    pub make_list:                unsafe extern "C" fn(*mut Env, c_uint, ...) -> Term,
+    pub make_list_cell:           unsafe extern "C" fn(*mut Env, Term, Term) -> Term,
+    pub make_string:              unsafe extern "C" fn(*mut Env, *const c_char, CharEncoding) -> Term,
+    pub make_ref:                 unsafe extern "C" fn(*mut Env) -> Term,
+
+    // ── NIF 1.0 — OTP R13B04 — thread primitives (mutex, cond, rwlock, tsd, thread) ──
     pub mutex_create:             unsafe extern "C" fn(*mut c_char) -> *mut Mutex,
     pub mutex_destroy:            unsafe extern "C" fn(*mut Mutex),
     pub mutex_trylock:            unsafe extern "C" fn(*mut Mutex) -> c_int,
@@ -94,66 +97,72 @@ pub(crate) struct Api {
     pub thread_exit:              unsafe extern "C" fn(*mut c_void),
     pub thread_join:              unsafe extern "C" fn(Tid, *mut *mut c_void) -> c_int,
 
-    // ── NIF 1.0 / 2.0 — more core, resources, strings, env, send ──
-    pub realloc:                  unsafe extern "C" fn(*mut c_void, usize) -> *mut c_void, // 1.0
-    pub system_info:              unsafe extern "C" fn(*mut SysInfo, usize), // 1.0
-    /// Variadic (`FILE*`, fmt, ...). 1.0
+    // ── NIF 1.0 — OTP R13B04 — more core, strings, resources, fprintf ──
+    pub realloc:                  unsafe extern "C" fn(*mut c_void, usize) -> *mut c_void,
+    pub system_info:              unsafe extern "C" fn(*mut SysInfo, usize),
+    /// Variadic (`FILE*`, fmt, ...).
     #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
-    pub fprintf:                  unsafe extern "C" fn(*mut c_void, *const c_char, ...) -> c_int, // 1.0
-    pub inspect_iolist_as_binary: unsafe extern "C" fn(*mut Env, Term, *mut Binary) -> c_int, // 1.0
-    pub make_sub_binary:          unsafe extern "C" fn(*mut Env, Term, usize, usize) -> Term, // 1.0
-    pub get_string:               unsafe extern "C" fn(*mut Env, Term, *mut c_char, c_uint, CharEncoding) -> c_int, // 1.0
-    pub get_atom:                 unsafe extern "C" fn(*mut Env, Term, *mut c_char, c_uint, CharEncoding) -> c_int, // 1.0
-    pub is_fun:                   unsafe extern "C" fn(*mut Env, Term) -> c_int, // 1.0
-    pub is_pid:                   unsafe extern "C" fn(*mut Env, Term) -> c_int, // 1.0
-    pub is_port:                  unsafe extern "C" fn(*mut Env, Term) -> c_int, // 1.0
-    pub get_uint:                 unsafe extern "C" fn(*mut Env, Term, *mut c_uint) -> c_int, // 1.0
-    pub get_long:                 unsafe extern "C" fn(*mut Env, Term, *mut c_long) -> c_int, // 1.0
-    pub make_uint:                unsafe extern "C" fn(*mut Env, c_uint) -> Term, // 1.0
-    pub make_long:                unsafe extern "C" fn(*mut Env, c_long) -> Term, // 1.0
-    pub make_tuple_from_array:    unsafe extern "C" fn(*mut Env, *const Term, c_uint) -> Term, // 1.0
-    pub make_list_from_array:     unsafe extern "C" fn(*mut Env, *const Term, c_uint) -> Term, // 1.0
-    pub is_empty_list:            unsafe extern "C" fn(*mut Env, Term) -> c_int, // 1.0
-    pub open_resource_type:       unsafe extern "C" fn(*mut Env, *const c_char, *const c_char, Option<unsafe extern "C" fn(*mut Env, *mut c_void)>, ResourceFlags, *mut ResourceFlags) -> *mut ResourceType, // 1.0
-    pub alloc_resource:           unsafe extern "C" fn(*mut ResourceType, usize) -> *mut c_void, // 1.0
-    pub release_resource:         unsafe extern "C" fn(*mut c_void), // 1.0
-    pub make_resource:            unsafe extern "C" fn(*mut Env, *mut c_void) -> Term, // 1.0
-    pub get_resource:             unsafe extern "C" fn(*mut Env, Term, *mut ResourceType, *mut *mut c_void) -> c_int, // 1.0
-    pub sizeof_resource:          unsafe extern "C" fn(*mut c_void) -> usize, // 1.0
-    pub make_new_binary:          unsafe extern "C" fn(*mut Env, usize, *mut Term) -> *mut u8, // 1.0
-    pub is_list:                  unsafe extern "C" fn(*mut Env, Term) -> c_int, // 2.0
-    pub is_tuple:                 unsafe extern "C" fn(*mut Env, Term) -> c_int, // 2.0
-    pub get_atom_length:          unsafe extern "C" fn(*mut Env, Term, *mut c_uint, CharEncoding) -> c_int, // 2.0
-    pub get_list_length:          unsafe extern "C" fn(*mut Env, Term, *mut c_uint) -> c_int, // 2.0
-    pub make_atom_len:            unsafe extern "C" fn(*mut Env, *const c_char, usize) -> Term, // 2.0
-    pub make_existing_atom_len:   unsafe extern "C" fn(*mut Env, *const c_char, usize, *mut Term, CharEncoding) -> c_int, // 2.0
-    pub make_string_len:          unsafe extern "C" fn(*mut Env, *const c_char, usize, CharEncoding) -> Term, // 2.0
-    pub alloc_env:                unsafe extern "C" fn() -> *mut Env, // 2.0
-    pub free_env:                 unsafe extern "C" fn(*mut Env), // 2.0
-    pub clear_env:                unsafe extern "C" fn(*mut Env), // 2.0
-    pub send:                     unsafe extern "C" fn(*mut Env, *const Pid, *mut Env, Term) -> c_int, // 2.0
-    pub make_copy:                unsafe extern "C" fn(*mut Env, Term) -> Term, // 2.0
-    pub self_:                    unsafe extern "C" fn(*mut Env, *mut Pid) -> *mut Pid, // 2.0
-    pub get_local_pid:            unsafe extern "C" fn(*mut Env, Term, *mut Pid) -> c_int, // 2.0
-    pub keep_resource:            unsafe extern "C" fn(*mut c_void), // 2.0
-    pub make_resource_binary:     unsafe extern "C" fn(*mut Env, *mut c_void, *const c_void, usize) -> Term, // 2.0
+    pub fprintf:                  unsafe extern "C" fn(*mut c_void, *const c_char, ...) -> c_int,
+    pub inspect_iolist_as_binary: unsafe extern "C" fn(*mut Env, Term, *mut Binary) -> c_int,
+    pub make_sub_binary:          unsafe extern "C" fn(*mut Env, Term, usize, usize) -> Term,
+    pub get_string:               unsafe extern "C" fn(*mut Env, Term, *mut c_char, c_uint, CharEncoding) -> c_int,
+    pub get_atom:                 unsafe extern "C" fn(*mut Env, Term, *mut c_char, c_uint, CharEncoding) -> c_int,
+    pub is_fun:                   unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub is_pid:                   unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub is_port:                  unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub get_uint:                 unsafe extern "C" fn(*mut Env, Term, *mut c_uint) -> c_int,
+    pub get_long:                 unsafe extern "C" fn(*mut Env, Term, *mut c_long) -> c_int,
+    pub make_uint:                unsafe extern "C" fn(*mut Env, c_uint) -> Term,
+    pub make_long:                unsafe extern "C" fn(*mut Env, c_long) -> Term,
+    pub make_tuple_from_array:    unsafe extern "C" fn(*mut Env, *const Term, c_uint) -> Term,
+    pub make_list_from_array:     unsafe extern "C" fn(*mut Env, *const Term, c_uint) -> Term,
+    pub is_empty_list:            unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub open_resource_type:       unsafe extern "C" fn(*mut Env, *const c_char, *const c_char, Option<unsafe extern "C" fn(*mut Env, *mut c_void)>, ResourceFlags, *mut ResourceFlags) -> *mut ResourceType,
+    pub alloc_resource:           unsafe extern "C" fn(*mut ResourceType, usize) -> *mut c_void,
+    pub release_resource:         unsafe extern "C" fn(*mut c_void),
+    pub make_resource:            unsafe extern "C" fn(*mut Env, *mut c_void) -> Term,
+    pub get_resource:             unsafe extern "C" fn(*mut Env, Term, *mut ResourceType, *mut *mut c_void) -> c_int,
+    pub sizeof_resource:          unsafe extern "C" fn(*mut c_void) -> usize,
 
-    // ── NIF 2.0 — 64-bit integers (header gates these on SIZEOF_LONG != 8; on
-    //    a 64-bit target they alias the `long` variants, see `unix::init`) ──
+    // ── NIF 2.0 — OTP R14A — predicates, *_len, owned env, send, resources ──
+    pub make_new_binary:          unsafe extern "C" fn(*mut Env, usize, *mut Term) -> *mut u8,
+    pub is_list:                  unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub is_tuple:                 unsafe extern "C" fn(*mut Env, Term) -> c_int,
+    pub get_atom_length:          unsafe extern "C" fn(*mut Env, Term, *mut c_uint, CharEncoding) -> c_int,
+    pub get_list_length:          unsafe extern "C" fn(*mut Env, Term, *mut c_uint) -> c_int,
+    pub make_atom_len:            unsafe extern "C" fn(*mut Env, *const c_char, usize) -> Term,
+    pub make_existing_atom_len:   unsafe extern "C" fn(*mut Env, *const c_char, usize, *mut Term, CharEncoding) -> c_int,
+    pub make_string_len:          unsafe extern "C" fn(*mut Env, *const c_char, usize, CharEncoding) -> Term,
+    pub alloc_env:                unsafe extern "C" fn() -> *mut Env,
+    pub free_env:                 unsafe extern "C" fn(*mut Env),
+    pub clear_env:                unsafe extern "C" fn(*mut Env),
+    pub send:                     unsafe extern "C" fn(*mut Env, *const Pid, *mut Env, Term) -> c_int,
+    pub make_copy:                unsafe extern "C" fn(*mut Env, Term) -> Term,
+    pub self_:                    unsafe extern "C" fn(*mut Env, *mut Pid) -> *mut Pid,
+    pub get_local_pid:            unsafe extern "C" fn(*mut Env, Term, *mut Pid) -> c_int,
+    pub keep_resource:            unsafe extern "C" fn(*mut c_void),
+    pub make_resource_binary:     unsafe extern "C" fn(*mut Env, *mut c_void, *const c_void, usize) -> Term,
+
+    // ── NIF 2.0 — OTP R14B — 64-bit integers (header gates on SIZEOF_LONG != 8;
+    //    alias the long variants on a 64-bit target, see unix::init) ──
     pub get_int64:                unsafe extern "C" fn(*mut Env, Term, *mut i64) -> c_int,
     pub get_uint64:               unsafe extern "C" fn(*mut Env, Term, *mut u64) -> c_int,
     pub make_int64:               unsafe extern "C" fn(*mut Env, i64) -> Term,
     pub make_uint64:              unsafe extern "C" fn(*mut Env, u64) -> Term,
 
-    // ── NIF 2.2 – 2.4 ──
-    pub is_exception:             unsafe extern "C" fn(*mut Env, Term) -> c_int, // 2.2
-    pub make_reverse_list:        unsafe extern "C" fn(*mut Env, Term, *mut Term) -> c_int, // 2.3
-    pub is_number:                unsafe extern "C" fn(*mut Env, Term) -> c_int, // 2.3
-    pub dlopen:                   unsafe extern "C" fn(*const c_char, Option<unsafe extern "C" fn(*mut c_void, *const c_char)>, *mut c_void) -> *mut c_void, // 2.4
-    pub dlsym:                    unsafe extern "C" fn(*mut c_void, *const c_char, Option<unsafe extern "C" fn(*mut c_void, *const c_char)>, *mut c_void) -> *mut c_void, // 2.4
-    pub consume_timeslice:        unsafe extern "C" fn(*mut Env, c_int) -> c_int, // 2.4
+    // ── NIF 2.2 — OTP R14B03 — is_exception ──
+    pub is_exception:             unsafe extern "C" fn(*mut Env, Term) -> c_int,
 
-    // ── NIF 2.6 — maps ──
+    // ── NIF 2.3 — OTP R15A — make_reverse_list, is_number ──
+    pub make_reverse_list:        unsafe extern "C" fn(*mut Env, Term, *mut Term) -> c_int,
+    pub is_number:                unsafe extern "C" fn(*mut Env, Term) -> c_int,
+
+    // ── NIF 2.4 — OTP R16B — dlopen/dlsym, consume_timeslice ──
+    pub dlopen:                   unsafe extern "C" fn(*const c_char, Option<unsafe extern "C" fn(*mut c_void, *const c_char)>, *mut c_void) -> *mut c_void,
+    pub dlsym:                    unsafe extern "C" fn(*mut c_void, *const c_char, Option<unsafe extern "C" fn(*mut c_void, *const c_char)>, *mut c_void) -> *mut c_void,
+    pub consume_timeslice:        unsafe extern "C" fn(*mut Env, c_int) -> c_int,
+
+    // ── NIF 2.6 — OTP 17 — maps ──
     pub is_map:                   unsafe extern "C" fn(*mut Env, Term) -> c_int,
     pub get_map_size:             unsafe extern "C" fn(*mut Env, Term, *mut usize) -> c_int,
     pub make_new_map:             unsafe extern "C" fn(*mut Env) -> Term,
@@ -169,18 +178,22 @@ pub(crate) struct Api {
     pub map_iterator_prev:        unsafe extern "C" fn(*mut Env, *mut MapIterator) -> c_int,
     pub map_iterator_get_pair:    unsafe extern "C" fn(*mut Env, *mut MapIterator, *mut Term, *mut Term) -> c_int,
 
-    // ── NIF 2.7 – 2.9 ──
-    pub schedule_nif:             unsafe extern "C" fn(*mut Env, *const c_char, c_int, unsafe extern "C" fn(*mut Env, c_int, *const Term) -> Term, c_int, *const Term) -> Term, // 2.7
-    pub has_pending_exception:    unsafe extern "C" fn(*mut Env, *mut Term) -> c_int, // 2.8
-    pub raise_exception:          unsafe extern "C" fn(*mut Env, Term) -> Term, // 2.8
-    pub getenv:                   unsafe extern "C" fn(*const c_char, *mut c_char, *mut usize) -> c_int, // 2.9
+    // ── NIF 2.7 — OTP 17.3 — schedule_nif ──
+    pub schedule_nif:             unsafe extern "C" fn(*mut Env, *const c_char, c_int, unsafe extern "C" fn(*mut Env, c_int, *const Term) -> Term, c_int, *const Term) -> Term,
 
-    // ── NIF 2.10 — time ──
+    // ── NIF 2.8 — OTP 18 — exceptions ──
+    pub has_pending_exception:    unsafe extern "C" fn(*mut Env, *mut Term) -> c_int,
+    pub raise_exception:          unsafe extern "C" fn(*mut Env, Term) -> Term,
+
+    // ── NIF 2.9 — OTP 18.2 — getenv ──
+    pub getenv:                   unsafe extern "C" fn(*const c_char, *mut c_char, *mut usize) -> c_int,
+
+    // ── NIF 2.10 — OTP 18.3 — time ──
     pub monotonic_time:           unsafe extern "C" fn(TimeUnit) -> Time,
     pub time_offset:              unsafe extern "C" fn(TimeUnit) -> Time,
     pub convert_time_unit:        unsafe extern "C" fn(Time, TimeUnit, TimeUnit) -> Time,
 
-    // ── NIF 2.11 — process/port queries, term<->binary, snprintf ──
+    // ── NIF 2.11 — OTP 19 — process/port queries, term<->binary, snprintf ──
     pub now_time:                 unsafe extern "C" fn(*mut Env) -> Term,
     pub cpu_time:                 unsafe extern "C" fn(*mut Env) -> Term,
     pub make_unique_integer:      unsafe extern "C" fn(*mut Env, UniqueInteger) -> Term,
@@ -192,11 +205,11 @@ pub(crate) struct Api {
     pub binary_to_term:           unsafe extern "C" fn(*mut Env, *const u8, usize, *mut Term, c_uint) -> usize,
     pub port_command:             unsafe extern "C" fn(*mut Env, *const Port, *mut Env, Term) -> c_int,
     pub thread_type:              unsafe extern "C" fn() -> c_int,
-    /// Variadic (buf, size, fmt, ...). 2.11
+    /// Variadic (buf, size, fmt, ...).
     #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub snprintf:                 unsafe extern "C" fn(*mut c_char, usize, *const c_char, ...) -> c_int,
 
-    // ── NIF 2.12 — select, monitors, hash, whereis ──
+    // ── NIF 2.12 — OTP 20 — select, monitors, hash, whereis ──
     pub select:                   unsafe extern "C" fn(*mut Env, Event, SelectFlags, *mut c_void, *const Pid, Term) -> c_int,
     pub open_resource_type_x:     unsafe extern "C" fn(*mut Env, *const c_char, *const ResourceTypeInit, ResourceFlags, *mut ResourceFlags) -> *mut ResourceType,
     pub monitor_process:          unsafe extern "C" fn(*mut Env, *mut c_void, *const Pid, *mut Monitor) -> c_int,
@@ -206,7 +219,7 @@ pub(crate) struct Api {
     pub whereis_pid:              unsafe extern "C" fn(*mut Env, Term, *mut Pid) -> c_int,
     pub whereis_port:             unsafe extern "C" fn(*mut Env, Term, *mut Port) -> c_int,
 
-    // ── NIF 2.13 — I/O queue ──
+    // ── NIF 2.12 — OTP 20.1 — I/O queue ──
     pub ioq_create:               unsafe extern "C" fn(IOQueueOpts) -> *mut IOQueue,
     pub ioq_destroy:              unsafe extern "C" fn(*mut IOQueue),
     pub ioq_enq_binary:           unsafe extern "C" fn(*mut IOQueue, *mut Binary, usize) -> c_int,
@@ -217,52 +230,53 @@ pub(crate) struct Api {
     pub inspect_iovec:            unsafe extern "C" fn(*mut Env, usize, Term, *mut Term, *mut *mut IOVec) -> c_int,
     pub free_iovec:               unsafe extern "C" fn(*mut IOVec),
 
-    // ── NIF 2.14 — ioq_peek_head, *_name, v*printf, make_map_from_arrays ──
+    // ── NIF 2.14 — OTP 21 — ioq_peek_head, *_name, v*printf, make_map_from_arrays ──
     pub ioq_peek_head:            unsafe extern "C" fn(*mut Env, *mut IOQueue, *mut usize, *mut Term) -> c_int,
     pub mutex_name:               unsafe extern "C" fn(*mut Mutex) -> *mut c_char,
     pub cond_name:                unsafe extern "C" fn(*mut Cond) -> *mut c_char,
     pub rwlock_name:              unsafe extern "C" fn(*mut RWLock) -> *mut c_char,
     pub thread_name:              unsafe extern "C" fn(Tid) -> *mut c_char,
     /// `va_list` argument approximated as a pointer — slot kept for table order;
-    /// not wrapped (Rust has no portable `va_list`). 2.14
+    /// not wrapped (Rust has no portable `va_list`).
     #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub vfprintf:                 unsafe extern "C" fn(*mut c_void, *const c_char, *mut c_void) -> c_int,
-    /// See [`Self::vfprintf`]. Not wrapped. 2.14
+    /// See [`Self::vfprintf`]. Not wrapped.
     #[allow(dead_code)] // unwrapped (varargs/va_list); slot kept for table order
     pub vsnprintf:                unsafe extern "C" fn(*mut c_char, usize, *const c_char, *mut c_void) -> c_int,
     pub make_map_from_arrays:     unsafe extern "C" fn(*mut Env, *const Term, *const Term, usize, *mut Term) -> c_int,
 
-    // ── NIF 2.15 — select_x, monitor term, pid-undefined, term_type ──
+    // ── NIF 2.15 — OTP 22 — select_x, monitor term, pid-undefined, term_type ──
     pub select_x:                 unsafe extern "C" fn(*mut Env, Event, SelectFlags, *mut c_void, *const Pid, Term, *mut Env) -> c_int,
     pub make_monitor_term:        unsafe extern "C" fn(*mut Env, *const Monitor) -> Term,
     pub set_pid_undefined:        unsafe extern "C" fn(*mut Pid),
     pub is_pid_undefined:         unsafe extern "C" fn(*const Pid) -> c_int,
     pub term_type:                unsafe extern "C" fn(*mut Env, Term) -> c_int,
 
-    // ── NIF 2.16 (OTP 24) ──
+    // ── NIF 2.16 — OTP 24 — resource type init, dynamic resource call ──
     #[cfg(feature = "nif_2_16")]
     pub init_resource_type:       unsafe extern "C" fn(*mut Env, *const c_char, *const ResourceTypeInit, ResourceFlags, *mut ResourceFlags) -> *mut ResourceType,
     #[cfg(feature = "nif_2_16")]
     pub dynamic_resource_call:    unsafe extern "C" fn(*mut Env, Term, Term, Term, *mut c_void) -> c_int,
 
-    // ── NIF 2.17 (OTP 26) ──
+    // ── NIF 2.17 — OTP 26 — string length, new atom, set_option ──
     #[cfg(feature = "nif_2_17")]
     pub get_string_length:        unsafe extern "C" fn(*mut Env, Term, *mut c_uint, CharEncoding) -> c_int,
     #[cfg(feature = "nif_2_17")]
     pub make_new_atom:            unsafe extern "C" fn(*mut Env, *const c_char, *mut Term, CharEncoding) -> c_int,
     #[cfg(feature = "nif_2_17")]
     pub make_new_atom_len:        unsafe extern "C" fn(*mut Env, *const c_char, usize, *mut Term, CharEncoding) -> c_int,
-    /// Variadic (env, opt, ...). 2.17
+    /// Variadic (env, opt, ...).
     #[cfg(feature = "nif_2_17")]
     pub set_option:               unsafe extern "C" fn(*mut Env, Option_, ...) -> c_int,
 
-    // ── NIF 2.18 (OTP 29) ──
+    // ── NIF 2.18 — OTP 29 — term_size, atom cache index ──
     #[cfg(feature = "nif_2_18")]
     pub term_size:                unsafe extern "C" fn(Term) -> usize,
     #[cfg(feature = "nif_2_18")]
     pub get_atom_cache_index:     unsafe extern "C" fn(*mut Env, Term, *mut c_uint) -> c_int,
     #[cfg(feature = "nif_2_18")]
     pub max_atom_cache_index:     unsafe extern "C" fn() -> c_uint,
+
 }
 
 // ---------------------------------------------------------------------------
