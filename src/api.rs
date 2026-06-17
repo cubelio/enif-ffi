@@ -1247,7 +1247,10 @@ pub unsafe fn make_uint64(env: *mut Env, i: u64) -> Term {
 // NIF 2.2 – 2.4
 // ===========================================================================
 
-/// Returns `true` if `term` is an exception.
+/// Tests whether a term is a pending exception.
+///
+/// Returns a non-zero value if `term` is an exception term — such as the value
+/// returned by [`make_badarg`] or [`raise_exception`] — and `0` otherwise.
 ///
 /// [`enif_is_exception`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_exception) — NIF 2.2 — OTP R14B03
 #[inline]
@@ -1255,7 +1258,10 @@ pub unsafe fn is_exception(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_exception)(env, term) }
 }
 
-/// Sets `*list_out` to the reverse list of the list `list_in` and returns `true`, or returns `false` if `list_in` is not a list.
+/// Reverses a proper list.
+///
+/// If `list_in` is a proper list, writes its reversal through `list_out` and
+/// returns a non-zero value; returns `0` if `list_in` is not a proper list.
 ///
 /// [`enif_make_reverse_list`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_reverse_list) — NIF 2.3 — OTP R15A
 #[inline]
@@ -1263,7 +1269,9 @@ pub unsafe fn make_reverse_list(env: *mut Env, list_in: Term, list_out: *mut Ter
     unsafe { (api().make_reverse_list)(env, list_in, list_out) }
 }
 
-/// Returns `true` if `term` is a number.
+/// Tests whether a term is a number.
+///
+/// Returns a non-zero value if `term` is an integer or a float, `0` otherwise.
 ///
 /// [`enif_is_number`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_number) — NIF 2.3 — OTP R15A
 #[inline]
@@ -1271,7 +1279,11 @@ pub unsafe fn is_number(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_number)(env, term) }
 }
 
-/// Opens a shared library (`dlopen`).
+/// Loads a shared library.
+///
+/// Opens the shared object at path `lib` and returns a handle, or null on
+/// failure. On failure `err_handler(err_arg, msg)` is invoked with a description
+/// if it is non-null. Resolve symbols in the result with [`dlsym`].
 ///
 /// [`enif_dlopen`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_dlopen) — NIF 2.4 — OTP R16B
 #[inline]
@@ -1283,7 +1295,11 @@ pub unsafe fn dlopen(
     unsafe { (api().dlopen)(lib, err_handler, err_arg) }
 }
 
-/// Resolves a symbol (`dlsym`).
+/// Resolves a symbol in a shared library.
+///
+/// Looks up `symbol` in the library `handle` (from [`dlopen`]) and returns its
+/// address, or null if not found — in which case `err_handler(err_arg, msg)` is
+/// invoked with a description if it is non-null.
 ///
 /// [`enif_dlsym`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_dlsym) — NIF 2.4 — OTP R16B
 #[inline]
@@ -1296,7 +1312,13 @@ pub unsafe fn dlsym(
     unsafe { (api().dlsym)(handle, symbol, err_handler, err_arg) }
 }
 
-/// Gives the runtime system a hint about how much CPU time the current NIF call has consumed since the last hint, or since the start of the NIF if no previous hint has been specified. The time is specified as a percent of the timeslice that a process is allowed to execute Erlang code until it can be suspended to give time for other runnable processes.
+/// Reports CPU time consumed and asks whether the NIF should yield.
+///
+/// Tells the scheduler that the current NIF has used `percent` (1–100) of a
+/// timeslice since the previous call, or since the NIF began. Returns a non-zero
+/// value once the accumulated time reaches a full slice — a hint that a
+/// long-running NIF should return soon or reschedule with [`schedule_nif`] to
+/// avoid blocking its scheduler.
 ///
 /// [`enif_consume_timeslice`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_consume_timeslice) — NIF 2.4 — OTP R16B
 #[inline]
@@ -1308,7 +1330,9 @@ pub unsafe fn consume_timeslice(env: *mut Env, percent: c_int) -> c_int {
 // NIF 2.6 — maps
 // ===========================================================================
 
-/// Returns `true` if `term` is a map, otherwise `false`.
+/// Tests whether a term is a map.
+///
+/// Returns a non-zero value if `term` is a map, `0` otherwise.
 ///
 /// [`enif_is_map`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_map) — NIF 2.6 — OTP 17
 #[inline]
@@ -1316,7 +1340,10 @@ pub unsafe fn is_map(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_map)(env, term) }
 }
 
-/// Sets `*size` to the number of key-value pairs in the map `term`.
+/// Reads the number of pairs in a map.
+///
+/// If `term` is a map, writes its key/value count through `size` and returns a
+/// non-zero value; returns `0` otherwise.
 ///
 /// [`enif_get_map_size`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_map_size) — NIF 2.6 — OTP 17
 #[inline]
@@ -1324,7 +1351,9 @@ pub unsafe fn get_map_size(env: *mut Env, term: Term, size: *mut usize) -> c_int
     unsafe { (api().get_map_size)(env, term, size) }
 }
 
-/// Makes an empty map term.
+/// Creates an empty map.
+///
+/// Returns the map `#{}` in `env`.
 ///
 /// [`enif_make_new_map`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_new_map) — NIF 2.6 — OTP 17
 #[inline]
@@ -1332,7 +1361,11 @@ pub unsafe fn make_new_map(env: *mut Env) -> Term {
     unsafe { (api().make_new_map)(env) }
 }
 
-/// Makes a copy of map `map_in` and inserts `key` with `value`. If `key` already exists in `map_in`, the old associated value is replaced by `value`.
+/// Returns a map with a key inserted or updated.
+///
+/// Copies `map_in` with `key` associated to `value`, writing the result through
+/// `map_out` and returning a non-zero value; returns `0` if `map_in` is not a
+/// map. Any existing value for `key` is replaced.
 ///
 /// [`enif_make_map_put`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_map_put) — NIF 2.6 — OTP 17
 #[inline]
@@ -1346,7 +1379,11 @@ pub unsafe fn make_map_put(
     unsafe { (api().make_map_put)(env, map_in, key, value, map_out) }
 }
 
-/// Sets `*value` to the value associated with `key` in the map `map`.
+/// Looks up a key in a map.
+///
+/// If `map` is a map containing `key`, writes the associated value through
+/// `value` and returns a non-zero value; returns `0` if the key is absent or
+/// `map` is not a map.
 ///
 /// [`enif_get_map_value`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_map_value) — NIF 2.6 — OTP 17
 #[inline]
@@ -1354,7 +1391,11 @@ pub unsafe fn get_map_value(env: *mut Env, map: Term, key: Term, value: *mut Ter
     unsafe { (api().get_map_value)(env, map, key, value) }
 }
 
-/// Makes a copy of map `map_in` and replaces the old associated value for `key` with `new_value`.
+/// Returns a map with an existing key's value replaced.
+///
+/// Copies `map_in` with `key` re-associated to `new_value`, writing the result
+/// through `map_out` and returning a non-zero value. `key` must already be
+/// present; returns `0` if it is absent or `map_in` is not a map.
 ///
 /// [`enif_make_map_update`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_map_update) — NIF 2.6 — OTP 17
 #[inline]
@@ -1368,7 +1409,11 @@ pub unsafe fn make_map_update(
     unsafe { (api().make_map_update)(env, map_in, key, new_value, map_out) }
 }
 
-/// If map `map_in` contains `key`, this function makes a copy of `map_in` in `*map_out`, and removes `key` and the associated value. If map `map_in` does not contain `key`, `*map_out` is set to `map_in`.
+/// Returns a map with a key removed.
+///
+/// Copies `map_in` without `key`, writing the result through `map_out` and
+/// returning a non-zero value; if `key` is absent, `map_out` is set to `map_in`
+/// unchanged. Returns `0` if `map_in` is not a map.
 ///
 /// [`enif_make_map_remove`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_map_remove) — NIF 2.6 — OTP 17
 #[inline]
@@ -1376,7 +1421,12 @@ pub unsafe fn make_map_remove(env: *mut Env, map_in: Term, key: Term, map_out: *
     unsafe { (api().make_map_remove)(env, map_in, key, map_out) }
 }
 
-/// Creates an iterator for the map `map` by initializing the structure pointed to by `iter`. Argument `entry` determines the start position of the iterator: `ERL_NIF_MAP_ITERATOR_FIRST` or `ERL_NIF_MAP_ITERATOR_LAST`.
+/// Creates an iterator over a map.
+///
+/// Initializes `iter` to traverse `map` starting from [`MapIteratorEntry`]
+/// `entry` (first or last), returning a non-zero value; returns `0` if `map` is
+/// not a map. Destroy it with [`map_iterator_destroy`]. Iteration order is
+/// unspecified but consistent for a given map.
 ///
 /// [`enif_map_iterator_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_create) — NIF 2.6 — OTP 17
 #[inline]
@@ -1389,7 +1439,9 @@ pub unsafe fn map_iterator_create(
     unsafe { (api().map_iterator_create)(env, map, iter, entry) }
 }
 
-/// Destroys a map iterator created by `enif_map_iterator_create`.
+/// Destroys a map iterator.
+///
+/// Releases an iterator initialized by [`map_iterator_create`].
 ///
 /// [`enif_map_iterator_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_destroy) — NIF 2.6 — OTP 17
 #[inline]
@@ -1397,7 +1449,10 @@ pub unsafe fn map_iterator_destroy(env: *mut Env, iter: *mut MapIterator) {
     unsafe { (api().map_iterator_destroy)(env, iter) }
 }
 
-/// Returns `true` if map iterator `iter` is positioned before the first entry.
+/// Tests whether an iterator is before the first entry.
+///
+/// Returns a non-zero value if `iter` sits at the head sentinel — before the
+/// first entry — and `0` otherwise.
 ///
 /// [`enif_map_iterator_is_head`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_is_head) — NIF 2.6 — OTP 17
 #[inline]
@@ -1405,7 +1460,10 @@ pub unsafe fn map_iterator_is_head(env: *mut Env, iter: *mut MapIterator) -> c_i
     unsafe { (api().map_iterator_is_head)(env, iter) }
 }
 
-/// Returns `true` if map iterator `iter` is positioned after the last entry.
+/// Tests whether an iterator is past the last entry.
+///
+/// Returns a non-zero value if `iter` sits at the tail sentinel — after the last
+/// entry — and `0` otherwise; iteration is exhausted once this holds.
 ///
 /// [`enif_map_iterator_is_tail`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_is_tail) — NIF 2.6 — OTP 17
 #[inline]
@@ -1413,7 +1471,10 @@ pub unsafe fn map_iterator_is_tail(env: *mut Env, iter: *mut MapIterator) -> c_i
     unsafe { (api().map_iterator_is_tail)(env, iter) }
 }
 
-/// Increments map iterator to point to the next key-value entry.
+/// Advances an iterator to the next entry.
+///
+/// Moves `iter` forward one entry, returning a non-zero value if it then points
+/// at a valid entry, or `0` once it reaches the tail sentinel.
 ///
 /// [`enif_map_iterator_next`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_next) — NIF 2.6 — OTP 17
 #[inline]
@@ -1421,7 +1482,10 @@ pub unsafe fn map_iterator_next(env: *mut Env, iter: *mut MapIterator) -> c_int 
     unsafe { (api().map_iterator_next)(env, iter) }
 }
 
-/// Decrements map iterator to point to the previous key-value entry.
+/// Moves an iterator to the previous entry.
+///
+/// Moves `iter` back one entry, returning a non-zero value if it then points at a
+/// valid entry, or `0` once it reaches the head sentinel.
 ///
 /// [`enif_map_iterator_prev`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_prev) — NIF 2.6 — OTP 17
 #[inline]
@@ -1429,7 +1493,11 @@ pub unsafe fn map_iterator_prev(env: *mut Env, iter: *mut MapIterator) -> c_int 
     unsafe { (api().map_iterator_prev)(env, iter) }
 }
 
-/// Gets key and value terms at the current map iterator position.
+/// Reads the key and value at the current position.
+///
+/// If `iter` points at a valid entry, writes its key through `key` and value
+/// through `value` and returns a non-zero value; returns `0` at a head or tail
+/// sentinel.
 ///
 /// [`enif_map_iterator_get_pair`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_map_iterator_get_pair) — NIF 2.6 — OTP 17
 #[inline]
