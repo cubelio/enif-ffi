@@ -83,9 +83,14 @@ jobs:
         # feature rung that OTP satisfies. The entry then advertises that
         # version and the loader dlsyms that rung's symbols (init resolves every
         # Api field and fails the load if one is missing) — so every rung is
-        # load-tested end to end against a matching BEAM, not just the floor.
+        # load-tested end to end against a matching BEAM.
+        #
+        # No 2.15 floor row: setup-beam has no prebuilt OTP 22/23 for any
+        # current Ubuntu runner (oldest is OTP 24). The floor is covered anyway
+        # — its symbols are a subset of the 2.16 row's dlsym set (additive
+        # ladder), and a 2.15 entry loading on a 2.15 BEAM is proven by the
+        # windows OTP 22 lane (version negotiation is platform-independent).
         include:
-          - { otp: "22", nif: "2.15", features: "" }
           - { otp: "24", nif: "2.16", features: "--features enif-ffi/nif_2_16" }
           - { otp: "26", nif: "2.17", features: "--features enif-ffi/nif_2_17" }
           - { otp: "29", nif: "2.18", features: "--features enif-ffi/nif_2_18" }
