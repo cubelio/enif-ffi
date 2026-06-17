@@ -47,6 +47,15 @@
 //! on Windows the BEAM passes a callback struct to `nif_init`, which is stored
 //! instead. [`nif_init!`] generates the correctly-typed entry point for the
 //! target, so a NIF's source is identical on both.
+//!
+//! # Verification
+//!
+//! Correctness rests on two checks rather than exhaustive per-symbol tests:
+//! the `enif_*` table layout is audited against the tagged `erl_nif` header
+//! history (every field version-gated and order-matched), and a smoke NIF is
+//! built and loaded into real BEAMs across NIF 2.15–2.18 on both Unix and
+//! Windows in CI, proving the binding resolves and dispatches the table on
+//! every supported version.
 
 // Every `unsafe fn` body must still mark its unsafe operations with an inner
 // `unsafe` block (the default in edition 2024; required here on edition 2021).
