@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-17
+
 Initial public release — the entire surface below is new.
 
 ### Added
@@ -22,4 +24,5 @@ Initial public release — the entire surface below is new.
 - `nif_init!` macro generating the platform-correct entry point, so a NIF's
   source is identical on both targets.
 
-[Unreleased]: https://github.com/cubelio/enif-ffi/commits/master
+[Unreleased]: https://github.com/cubelio/enif-ffi/compare/0.1.0...HEAD
+[0.1.0]: https://github.com/cubelio/enif-ffi/releases/tag/0.1.0
