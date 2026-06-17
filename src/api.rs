@@ -2289,7 +2289,11 @@ pub unsafe fn max_atom_cache_index() -> c_uint {
 // Convenience wrappers for C macros (no exported symbol)
 // ===========================================================================
 
-/// Makes a pid term or the atom `undefined` from `*pid`.
+/// Builds a pid term, or the atom `undefined`.
+///
+/// Returns the term for `pid`, or the atom `undefined` if it was set by
+/// [`set_pid_undefined`]. Reimplements the `enif_make_pid` macro, so `env` is
+/// accepted for signature compatibility but unused.
 ///
 /// [`enif_make_pid`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_pid) — NIF 2.0 — OTP R14A
 #[inline]
@@ -2297,7 +2301,10 @@ pub unsafe fn make_pid(_env: *mut Env, pid: Pid) -> Term {
     pid.pid
 }
 
-/// Compares two pids by Erlang term order.
+/// Orders two pids by Erlang term order.
+///
+/// Returns a negative, zero, or positive value according to whether `*pid1` sorts
+/// before, equal to, or after `*pid2`, using the term order of [`compare`].
 ///
 /// [`enif_compare_pids`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_compare_pids) — NIF 2.15 — OTP 22
 #[inline]
@@ -2305,7 +2312,11 @@ pub unsafe fn compare_pids(pid1: *const Pid, pid2: *const Pid) -> c_int {
     unsafe { compare((*pid1).pid, (*pid2).pid) }
 }
 
-/// Custom-message read select: calls [`select_x`] with `READ | CUSTOM_MSG`.
+/// Selects an event for read readiness, with a custom message.
+///
+/// Calls [`select_x`] with [`SelectFlags::READ`] | [`SelectFlags::CUSTOM_MSG`],
+/// so `msg` (in `msg_env`) is delivered to `pid` when the event becomes
+/// readable. See [`select_x`] for the full semantics.
 ///
 /// [`enif_select_read`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_select_read) — NIF 2.15 — OTP 22
 #[inline]
@@ -2330,7 +2341,11 @@ pub unsafe fn select_read(
     }
 }
 
-/// Custom-message write select: calls [`select_x`] with `WRITE | CUSTOM_MSG`.
+/// Selects an event for write readiness, with a custom message.
+///
+/// Calls [`select_x`] with [`SelectFlags::WRITE`] | [`SelectFlags::CUSTOM_MSG`],
+/// so `msg` (in `msg_env`) is delivered to `pid` when the event becomes
+/// writable. See [`select_x`] for the full semantics.
 ///
 /// [`enif_select_write`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_select_write) — NIF 2.15 — OTP 22
 #[inline]
@@ -2355,7 +2370,11 @@ pub unsafe fn select_write(
     }
 }
 
-/// Custom-message error select: calls [`select_x`] with `ERROR | CUSTOM_MSG`.
+/// Selects an event for error conditions, with a custom message.
+///
+/// Calls [`select_x`] with [`SelectFlags::ERROR`] | [`SelectFlags::CUSTOM_MSG`],
+/// so `msg` (in `msg_env`) is delivered to `pid` on an error condition. See
+/// [`select_x`] for the full semantics.
 ///
 /// [`enif_select_error`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_select_error) — NIF 2.16 — OTP 24
 #[cfg(feature = "nif_2_16")]
@@ -2381,7 +2400,11 @@ pub unsafe fn select_error(
     }
 }
 
-/// Sets the [`Option_::DelayHalt`] option: delay runtime-system halt until NIF calls return. Settable only during load.
+/// Requests that runtime halt wait for this library's NIF calls.
+///
+/// Sets the [`Option_::DelayHalt`] option, so the runtime defers halting until
+/// in-progress NIF calls into this library have returned. Settable only from the
+/// module's `load` callback; returns `0` on success.
 ///
 /// [`enif_set_option_delay_halt`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_set_option_delay_halt) — NIF 2.17 — OTP 26
 #[cfg(feature = "nif_2_17")]
@@ -2390,7 +2413,11 @@ pub unsafe fn set_option_delay_halt(env: *mut Env) -> c_int {
     unsafe { (api().set_option)(env, Option_::DelayHalt) }
 }
 
-/// Installs an on-halt callback via the [`Option_::OnHalt`] option. Settable only during load.
+/// Installs a callback run when the runtime halts.
+///
+/// Sets the [`Option_::OnHalt`] option, registering `on_halt` to run when the
+/// runtime system halts. Settable only from the module's `load` callback;
+/// returns `0` on success.
 ///
 /// [`enif_set_option_on_halt`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_set_option_on_halt) — NIF 2.17 — OTP 26
 #[cfg(feature = "nif_2_17")]
@@ -2402,7 +2429,12 @@ pub unsafe fn set_option_on_halt(
     unsafe { (api().set_option)(env, Option_::OnHalt, on_halt) }
 }
 
-/// Installs a per-scheduler on-unload-thread callback via the [`Option_::OnUnloadThread`] option. Settable only during load.
+/// Installs a per-scheduler callback run when the library unloads.
+///
+/// Sets the [`Option_::OnUnloadThread`] option, registering `on_unload_thread` to
+/// run on each scheduler thread as the library is unloaded. Settable only from
+/// the module's `load` callback; returns `0` on success. The option itself
+/// requires OTP 27, even though the surrounding API is NIF 2.17.
 ///
 /// [`enif_set_option_on_unload_thread`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_set_option_on_unload_thread) — NIF 2.17 — OTP 27
 #[cfg(feature = "nif_2_17")]
@@ -2418,7 +2450,9 @@ pub unsafe fn set_option_on_unload_thread(
 // Fixed-arity tuple constructors (call the variadic `enif_make_tuple`)
 // ---------------------------------------------------------------------------
 
-/// Creates a 1-tuple.
+/// Builds a 1-tuple.
+///
+/// Returns `{e1}` in `env`; a fixed-arity form of [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple1`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple1) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2426,7 +2460,9 @@ pub unsafe fn make_tuple1(env: *mut Env, e1: Term) -> Term {
     unsafe { (api().make_tuple)(env, 1, e1) }
 }
 
-/// Creates a 2-tuple.
+/// Builds a 2-tuple.
+///
+/// Returns `{e1, e2}` in `env`; a fixed-arity form of [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple2`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple2) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2434,7 +2470,10 @@ pub unsafe fn make_tuple2(env: *mut Env, e1: Term, e2: Term) -> Term {
     unsafe { (api().make_tuple)(env, 2, e1, e2) }
 }
 
-/// Creates a 3-tuple.
+/// Builds a 3-tuple.
+///
+/// Returns `{e1, e2, e3}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple3`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple3) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2442,7 +2481,10 @@ pub unsafe fn make_tuple3(env: *mut Env, e1: Term, e2: Term, e3: Term) -> Term {
     unsafe { (api().make_tuple)(env, 3, e1, e2, e3) }
 }
 
-/// Creates a 4-tuple.
+/// Builds a 4-tuple.
+///
+/// Returns `{e1, …, e4}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple4`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple4) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2450,7 +2492,10 @@ pub unsafe fn make_tuple4(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term)
     unsafe { (api().make_tuple)(env, 4, e1, e2, e3, e4) }
 }
 
-/// Creates a 5-tuple.
+/// Builds a 5-tuple.
+///
+/// Returns `{e1, …, e5}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple5`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple5) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2458,7 +2503,10 @@ pub unsafe fn make_tuple5(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term,
     unsafe { (api().make_tuple)(env, 5, e1, e2, e3, e4, e5) }
 }
 
-/// Creates a 6-tuple.
+/// Builds a 6-tuple.
+///
+/// Returns `{e1, …, e6}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple6`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple6) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2474,7 +2522,10 @@ pub unsafe fn make_tuple6(
     unsafe { (api().make_tuple)(env, 6, e1, e2, e3, e4, e5, e6) }
 }
 
-/// Creates a 7-tuple.
+/// Builds a 7-tuple.
+///
+/// Returns `{e1, …, e7}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple7`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple7) — NIF 1.0 — OTP R13B04
 #[allow(clippy::too_many_arguments)]
@@ -2492,7 +2543,10 @@ pub unsafe fn make_tuple7(
     unsafe { (api().make_tuple)(env, 7, e1, e2, e3, e4, e5, e6, e7) }
 }
 
-/// Creates a 8-tuple.
+/// Builds an 8-tuple.
+///
+/// Returns `{e1, …, e8}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple8`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple8) — NIF 1.0 — OTP R13B04
 #[allow(clippy::too_many_arguments)]
@@ -2511,7 +2565,10 @@ pub unsafe fn make_tuple8(
     unsafe { (api().make_tuple)(env, 8, e1, e2, e3, e4, e5, e6, e7, e8) }
 }
 
-/// Creates a 9-tuple.
+/// Builds a 9-tuple.
+///
+/// Returns `{e1, …, e9}` in `env`; a fixed-arity form of
+/// [`make_tuple_from_array`].
 ///
 /// [`enif_make_tuple9`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_tuple9) — NIF 1.0 — OTP R13B04
 #[allow(clippy::too_many_arguments)]
@@ -2535,7 +2592,9 @@ pub unsafe fn make_tuple9(
 // Fixed-arity list constructors (call the variadic `enif_make_list`)
 // ---------------------------------------------------------------------------
 
-/// Creates a 1-element list.
+/// Builds a 1-element list.
+///
+/// Returns `[e1]` in `env`; a fixed-arity form of [`make_list_from_array`].
 ///
 /// [`enif_make_list1`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list1) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2543,7 +2602,9 @@ pub unsafe fn make_list1(env: *mut Env, e1: Term) -> Term {
     unsafe { (api().make_list)(env, 1, e1) }
 }
 
-/// Creates a 2-element list.
+/// Builds a 2-element list.
+///
+/// Returns `[e1, e2]` in `env`; a fixed-arity form of [`make_list_from_array`].
 ///
 /// [`enif_make_list2`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list2) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2551,7 +2612,10 @@ pub unsafe fn make_list2(env: *mut Env, e1: Term, e2: Term) -> Term {
     unsafe { (api().make_list)(env, 2, e1, e2) }
 }
 
-/// Creates a 3-element list.
+/// Builds a 3-element list.
+///
+/// Returns `[e1, e2, e3]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list3`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list3) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2559,7 +2623,10 @@ pub unsafe fn make_list3(env: *mut Env, e1: Term, e2: Term, e3: Term) -> Term {
     unsafe { (api().make_list)(env, 3, e1, e2, e3) }
 }
 
-/// Creates a 4-element list.
+/// Builds a 4-element list.
+///
+/// Returns `[e1, …, e4]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list4`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list4) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2567,7 +2634,10 @@ pub unsafe fn make_list4(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term) 
     unsafe { (api().make_list)(env, 4, e1, e2, e3, e4) }
 }
 
-/// Creates a 5-element list.
+/// Builds a 5-element list.
+///
+/// Returns `[e1, …, e5]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list5`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list5) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2575,7 +2645,10 @@ pub unsafe fn make_list5(env: *mut Env, e1: Term, e2: Term, e3: Term, e4: Term, 
     unsafe { (api().make_list)(env, 5, e1, e2, e3, e4, e5) }
 }
 
-/// Creates a 6-element list.
+/// Builds a 6-element list.
+///
+/// Returns `[e1, …, e6]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list6`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list6) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -2591,7 +2664,10 @@ pub unsafe fn make_list6(
     unsafe { (api().make_list)(env, 6, e1, e2, e3, e4, e5, e6) }
 }
 
-/// Creates a 7-element list.
+/// Builds a 7-element list.
+///
+/// Returns `[e1, …, e7]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list7`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list7) — NIF 1.0 — OTP R13B04
 #[allow(clippy::too_many_arguments)]
@@ -2609,7 +2685,10 @@ pub unsafe fn make_list7(
     unsafe { (api().make_list)(env, 7, e1, e2, e3, e4, e5, e6, e7) }
 }
 
-/// Creates a 8-element list.
+/// Builds an 8-element list.
+///
+/// Returns `[e1, …, e8]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list8`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list8) — NIF 1.0 — OTP R13B04
 #[allow(clippy::too_many_arguments)]
@@ -2628,7 +2707,10 @@ pub unsafe fn make_list8(
     unsafe { (api().make_list)(env, 8, e1, e2, e3, e4, e5, e6, e7, e8) }
 }
 
-/// Creates a 9-element list.
+/// Builds a 9-element list.
+///
+/// Returns `[e1, …, e9]` in `env`; a fixed-arity form of
+/// [`make_list_from_array`].
 ///
 /// [`enif_make_list9`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list9) — NIF 1.0 — OTP R13B04
 #[allow(clippy::too_many_arguments)]
