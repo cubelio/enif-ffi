@@ -16,7 +16,7 @@ use crate::ffi::{Api, API};
 /// uses. Only the leading `Api` is read.
 #[repr(C)]
 pub struct TWinDynNifCallbacks {
-    funcs: Api,
+    api: Api,
     erts_alc_test: *mut c_void,
 }
 
@@ -33,11 +33,11 @@ pub unsafe fn init(callbacks: *const TWinDynNifCallbacks) {
     if API.get().is_some() {
         return;
     }
-    // The function pointers are the leading `funcs` field; copy them out. A
+    // The function pointers are the leading `api` field; copy them out. A
     // newer BEAM may have appended further fields (plus erts_alc_test); we read
     // only our prefix.
-    let funcs = unsafe { std::ptr::read(std::ptr::addr_of!((*callbacks).funcs)) };
-    let _ = API.set(funcs);
+    let api = unsafe { std::ptr::read(std::ptr::addr_of!((*callbacks).api)) };
+    let _ = API.set(api);
 }
 
 /// `SysIOVec` — iovec; on Windows the fields are swapped and `iov_len` is 32-bit
