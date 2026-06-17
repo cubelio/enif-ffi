@@ -879,8 +879,8 @@ pub type TSDKey = c_int;
 /// Options for creating a thread.
 ///
 /// Allocated with [`thread_opts_create`](crate::thread_opts_create) and passed to [`thread_create`](crate::thread_create). The
-/// single field `suggested_stack_size` is a stack-size hint, or `0` for the
-/// default.
+/// single field `suggested_stack_size` is a stack-size suggestion in kilowords;
+/// a value below zero requests the default size.
 ///
 /// [`ErlNifThreadOpts`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ErlNifThreadOpts) — NIF 1.0 — OTP R13B04
 #[repr(C)]

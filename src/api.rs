@@ -1798,7 +1798,8 @@ pub unsafe fn open_resource_type_x(
 /// Starts monitoring `target_pid` from the resource `obj`; when that process
 /// dies, the resource type's `down` callback runs. Writes the monitor identifier
 /// through `mon` and returns `0` on success, a positive value if the process is
-/// already dead, or a negative value on error. Cancel with [`demonitor_process`].
+/// already dead or `target_pid` is undefined, or a negative value if the resource
+/// type has no `down` callback. Cancel with [`demonitor_process`].
 ///
 /// [`enif_monitor_process`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_monitor_process) — NIF 2.12 — OTP 20
 #[inline]
@@ -1841,9 +1842,9 @@ pub unsafe fn compare_monitors(monitor1: *const Monitor, monitor2: *const Monito
 
 /// Hashes a term.
 ///
-/// Returns a 64-bit hash of `term` using algorithm [`Hash`](crate::Hash) `type_`. `salt`
-/// perturbs [`Hash::InternalHash`]; it is ignored by [`Hash::Phash2`], which
-/// matches `erlang:phash2/1` and yields a value in the low 32 bits.
+/// Returns a 64-bit hash of `term` using algorithm [`Hash`](crate::Hash) `type_`.
+/// `salt` perturbs [`Hash::InternalHash`]; [`Hash::Phash2`] ignores it and
+/// returns a 27-bit value matching `erlang:phash2/1`.
 ///
 /// [`enif_hash`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_hash) — NIF 2.12 — OTP 20
 #[inline]
