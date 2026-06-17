@@ -1749,7 +1749,17 @@ pub unsafe fn thread_type() -> c_int {
 // NIF 2.12 — select, monitors, hash, whereis
 // ===========================================================================
 
-/// This function can be used to receive asynchronous notifications when OS-specific event objects become ready for either read or write operations.
+/// Schedules or cancels asynchronous readiness notification for an OS event.
+///
+/// Asks the runtime to message `pid` (or the calling process, if `pid` is null)
+/// when `event` becomes ready in the requested `mode` — [`SelectFlags::READ`]
+/// and/or [`SelectFlags::WRITE`], or [`SelectFlags::STOP`] /
+/// [`SelectFlags::CANCEL`] to tear a selection down. `obj` is the resource that
+/// owns the event; its stop callback (from [`ResourceTypeInit`]) runs once the
+/// event is safe to close. `ref_` is the term carried in the default `{select,
+/// …}` message, or — with [`SelectFlags::CUSTOM_MSG`] — the whole message to
+/// send. Returns a non-negative bitmask of `SELECT_*` result bits (see
+/// [`SELECT_STOP_CALLED`]) on success, or a negative value on error.
 ///
 /// [`enif_select`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_select) — NIF 2.12 — OTP 20
 #[inline]
@@ -1764,7 +1774,12 @@ pub unsafe fn select(
     unsafe { (api().select)(env, event, mode, obj, pid, ref_) }
 }
 
-/// Same as `enif_open_resource_type` except it accepts additional callback functions for resource types that are used together with `enif_select` and `enif_monitor_process`.
+/// Registers a resource type with select and monitor callbacks.
+///
+/// Like [`open_resource_type`], but takes a [`ResourceTypeInit`] callback table,
+/// so the type can also carry the stop, down, and dyncall callbacks used with
+/// [`select`] and [`monitor_process`]. Returns the [`ResourceType`] handle or
+/// null; callable only from the module's `load` or `upgrade` callback.
 ///
 /// [`enif_open_resource_type_x`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_open_resource_type_x) — NIF 2.12 — OTP 20
 #[inline]
@@ -1778,7 +1793,12 @@ pub unsafe fn open_resource_type_x(
     unsafe { (api().open_resource_type_x)(env, name, init, flags, tried) }
 }
 
-/// Starts monitoring a process from a resource. When a process is monitored, a process exit results in a call to the provided `down` callback associated with the resource type.
+/// Monitors a process on behalf of a resource.
+///
+/// Starts monitoring `target_pid` from the resource `obj`; when that process
+/// dies, the resource type's `down` callback runs. Writes the monitor identifier
+/// through `mon` and returns `0` on success, a positive value if the process is
+/// already dead, or a negative value on error. Cancel with [`demonitor_process`].
 ///
 /// [`enif_monitor_process`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_monitor_process) — NIF 2.12 — OTP 20
 #[inline]
@@ -1791,7 +1811,11 @@ pub unsafe fn monitor_process(
     unsafe { (api().monitor_process)(caller_env, obj, target_pid, mon) }
 }
 
-/// Cancels a monitor created earlier with `enif_monitor_process`. Argument `obj` is a pointer to the resource holding the monitor and `*mon` identifies the monitor.
+/// Cancels a process monitor held by a resource.
+///
+/// Cancels the monitor `mon` held by resource `obj` (from [`monitor_process`]),
+/// returning `0` if it was still active or a non-zero value if it had already
+/// fired or been removed.
 ///
 /// [`enif_demonitor_process`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_demonitor_process) — NIF 2.12 — OTP 20
 #[inline]
@@ -1803,7 +1827,11 @@ pub unsafe fn demonitor_process(
     unsafe { (api().demonitor_process)(caller_env, obj, mon) }
 }
 
-/// Compares two `ErlNifMonitor`s. Can also be used to imply some artificial order on monitors, for whatever reason.
+/// Orders two monitor identifiers.
+///
+/// Returns a negative, zero, or positive value giving a total order over
+/// `monitor1` and `monitor2`, suitable for keeping monitors in an ordered
+/// structure. They compare equal only if they identify the same monitor.
 ///
 /// [`enif_compare_monitors`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_compare_monitors) — NIF 2.12 — OTP 20
 #[inline]
@@ -1811,7 +1839,11 @@ pub unsafe fn compare_monitors(monitor1: *const Monitor, monitor2: *const Monito
     unsafe { (api().compare_monitors)(monitor1, monitor2) }
 }
 
-/// Hashes `term` according to the specified `ErlNifHash` `type`.
+/// Hashes a term.
+///
+/// Returns a 64-bit hash of `term` using algorithm [`Hash`](crate::Hash) `type_`. `salt`
+/// perturbs [`Hash::InternalHash`]; it is ignored by [`Hash::Phash2`], which
+/// matches `erlang:phash2/1` and yields a value in the low 32 bits.
 ///
 /// [`enif_hash`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_hash) — NIF 2.12 — OTP 20
 #[inline]
@@ -1819,7 +1851,11 @@ pub unsafe fn hash(type_: Hash, term: Term, salt: u64) -> u64 {
     unsafe { (api().hash)(type_, term, salt) }
 }
 
-/// Looks up a process by its registered name.
+/// Looks up a registered process by name.
+///
+/// If the atom `name` is a registered local process, writes its pid through `pid`
+/// and returns a non-zero value; returns `0` otherwise. `caller_env` may be null
+/// when called from a thread that is not running a NIF.
 ///
 /// [`enif_whereis_pid`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_whereis_pid) — NIF 2.12 — OTP 20
 #[inline]
@@ -1827,7 +1863,11 @@ pub unsafe fn whereis_pid(caller_env: *mut Env, name: Term, pid: *mut Pid) -> c_
     unsafe { (api().whereis_pid)(caller_env, name, pid) }
 }
 
-/// Looks up a port by its registered name.
+/// Looks up a registered port by name.
+///
+/// If the atom `name` is a registered local port, writes it through `port` and
+/// returns a non-zero value; returns `0` otherwise. `caller_env` may be null when
+/// called from a thread that is not running a NIF.
 ///
 /// [`enif_whereis_port`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_whereis_port) — NIF 2.12 — OTP 20
 #[inline]
@@ -1839,7 +1879,10 @@ pub unsafe fn whereis_port(caller_env: *mut Env, name: Term, port: *mut Port) ->
 // NIF 2.13 — I/O queue
 // ===========================================================================
 
-/// Creates a new I/O queue that can be used to store data. `opts` has to be set to `ERL_NIF_IOQ_NORMAL`.
+/// Creates an I/O queue.
+///
+/// Returns a new I/O queue, or null on failure. `opts` must be [`IOQ_NORMAL`].
+/// Destroy it with [`ioq_destroy`].
 ///
 /// [`enif_ioq_create`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_create) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1847,7 +1890,9 @@ pub unsafe fn ioq_create(opts: IOQueueOpts) -> *mut IOQueue {
     unsafe { (api().ioq_create)(opts) }
 }
 
-/// Destroys the I/O queue and frees all of its contents.
+/// Destroys an I/O queue.
+///
+/// Frees a queue from [`ioq_create`] along with any data still in it.
 ///
 /// [`enif_ioq_destroy`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_destroy) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1855,7 +1900,10 @@ pub unsafe fn ioq_destroy(q: *mut IOQueue) {
     unsafe { (api().ioq_destroy)(q) }
 }
 
-/// Enqueues the `bin` into `q` skipping the first `skip` bytes.
+/// Appends a binary to an I/O queue.
+///
+/// Enqueues `bin` onto `q`, skipping its first `skip` bytes, and takes ownership
+/// of the binary as [`make_binary`] would. Returns a non-zero value on success.
 ///
 /// [`enif_ioq_enq_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_enq_binary) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1863,7 +1911,10 @@ pub unsafe fn ioq_enq_binary(q: *mut IOQueue, bin: *mut Binary, skip: usize) -> 
     unsafe { (api().ioq_enq_binary)(q, bin, skip) }
 }
 
-/// Enqueues the `iovec` into `q` skipping the first `skip` bytes.
+/// Appends an iovec to an I/O queue.
+///
+/// Enqueues the [`IOVec`] `iovec` onto `q`, skipping the first `skip` bytes.
+/// Returns a non-zero value on success.
 ///
 /// [`enif_ioq_enqv`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_enqv) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1871,7 +1922,9 @@ pub unsafe fn ioq_enqv(q: *mut IOQueue, iovec: *mut IOVec, skip: usize) -> c_int
     unsafe { (api().ioq_enqv)(q, iovec, skip) }
 }
 
-/// Gets the size of `q`.
+/// Returns the number of bytes queued.
+///
+/// Reports the total byte length currently held in `q`.
 ///
 /// [`enif_ioq_size`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_size) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1879,7 +1932,11 @@ pub unsafe fn ioq_size(q: *mut IOQueue) -> usize {
     unsafe { (api().ioq_size)(q) }
 }
 
-/// Dequeues `count` bytes from the I/O queue. If `size` is not `NULL`, the new size of the queue is placed there.
+/// Removes bytes from the front of an I/O queue.
+///
+/// Discards `count` bytes from the head of `q`; when `size` is non-null, the
+/// queue's new byte length is written through it. Returns a non-zero value on
+/// success.
 ///
 /// [`enif_ioq_deq`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_deq) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1887,7 +1944,11 @@ pub unsafe fn ioq_deq(q: *mut IOQueue, count: usize, size: *mut usize) -> c_int 
     unsafe { (api().ioq_deq)(q, count, size) }
 }
 
-/// Gets the I/O queue as a pointer to an array of `SysIOVec`s. It also returns the number of elements in `iovlen`.
+/// Borrows the queued data as an array of iovecs.
+///
+/// Returns a pointer to `q`'s data as an array of [`SysIOVec`]s and writes the
+/// element count through `iovlen`. The array is read-only and valid until `q` is
+/// next modified; no data is removed — use [`ioq_deq`] for that.
 ///
 /// [`enif_ioq_peek`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_peek) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1895,7 +1956,13 @@ pub unsafe fn ioq_peek(q: *mut IOQueue, iovlen: *mut c_int) -> *mut SysIOVec {
     unsafe { (api().ioq_peek)(q, iovlen) }
 }
 
-/// Fills `iovec` with the list of binaries provided in `iovec_term`. The number of elements handled in the call is limited to `max_elements`, and `tail` is set to the remainder of the list.
+/// Converts a list of binaries into an iovec.
+///
+/// Fills `iovec` with the binaries in the iolist `iovec_term`, handling at most
+/// `max_elements` of them and writing the unprocessed remainder of the list
+/// through `tail`. Returns a non-zero value on success. With a non-null `env`
+/// the [`IOVec`] is freed automatically when the NIF returns; with a null `env`
+/// you must free it yourself with [`free_iovec`].
 ///
 /// [`enif_inspect_iovec`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_inspect_iovec) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1909,7 +1976,10 @@ pub unsafe fn inspect_iovec(
     unsafe { (api().inspect_iovec)(env, max_elements, iovec_term, tail, iovec) }
 }
 
-/// Frees an io vector returned from `enif_inspect_iovec`. This is needed only if a `NULL` environment is passed to `enif_inspect_iovec`.
+/// Frees an iovec from [`inspect_iovec`].
+///
+/// Releases an [`IOVec`] returned by [`inspect_iovec`]. Needed only when that
+/// call was made with a null environment.
 ///
 /// [`enif_free_iovec`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_free_iovec) — NIF 2.12 — OTP 20.1
 #[inline]
@@ -1921,7 +1991,11 @@ pub unsafe fn free_iovec(iov: *mut IOVec) {
 // NIF 2.14 — ioq_peek_head, *_name, make_map_from_arrays
 // ===========================================================================
 
-/// Gets the head of the I/O queue as a binary term.
+/// Borrows the first binary in an I/O queue.
+///
+/// If `q` is non-empty, writes a binary term for the data at its head through
+/// `bin_term`, writes that binary's size through `size`, and returns a non-zero
+/// value; returns `0` if the queue is empty.
 ///
 /// [`enif_ioq_peek_head`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_ioq_peek_head) — NIF 2.14 — OTP 21
 #[inline]
@@ -1934,7 +2008,10 @@ pub unsafe fn ioq_peek_head(
     unsafe { (api().ioq_peek_head)(env, q, size, bin_term) }
 }
 
-/// Same as `erl_drv_mutex_name`.
+/// Returns a mutex's name.
+///
+/// Returns the identifying string given to [`mutex_create`]. Like
+/// [`erl_drv_mutex_name`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_mutex_name).
 ///
 /// [`enif_mutex_name`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_mutex_name) — NIF 2.14 — OTP 21
 #[inline]
@@ -1942,7 +2019,10 @@ pub unsafe fn mutex_name(mtx: *mut Mutex) -> *mut c_char {
     unsafe { (api().mutex_name)(mtx) }
 }
 
-/// Same as `erl_drv_cond_name`.
+/// Returns a condition variable's name.
+///
+/// Returns the identifying string given to [`cond_create`]. Like
+/// [`erl_drv_cond_name`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_cond_name).
 ///
 /// [`enif_cond_name`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_cond_name) — NIF 2.14 — OTP 21
 #[inline]
@@ -1950,7 +2030,10 @@ pub unsafe fn cond_name(cnd: *mut Cond) -> *mut c_char {
     unsafe { (api().cond_name)(cnd) }
 }
 
-/// Same as `erl_drv_rwlock_name`.
+/// Returns a read/write lock's name.
+///
+/// Returns the identifying string given to [`rwlock_create`]. Like
+/// [`erl_drv_rwlock_name`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_rwlock_name).
 ///
 /// [`enif_rwlock_name`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_rwlock_name) — NIF 2.14 — OTP 21
 #[inline]
@@ -1958,7 +2041,10 @@ pub unsafe fn rwlock_name(rwlck: *mut RWLock) -> *mut c_char {
     unsafe { (api().rwlock_name)(rwlck) }
 }
 
-/// Same as `erl_drv_thread_name`.
+/// Returns a thread's name.
+///
+/// Returns the name of thread `tid` (from [`thread_create`]). Like
+/// [`erl_drv_thread_name`](https://www.erlang.org/doc/apps/erts/erl_driver.html#erl_drv_thread_name).
 ///
 /// [`enif_thread_name`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_thread_name) — NIF 2.14 — OTP 21
 #[inline]
@@ -1966,7 +2052,11 @@ pub unsafe fn thread_name(tid: Tid) -> *mut c_char {
     unsafe { (api().thread_name)(tid) }
 }
 
-/// Makes a map term from the given keys and values.
+/// Builds a map from parallel key and value arrays.
+///
+/// Builds a map pairing the `cnt` keys at `keys` with the `cnt` values at
+/// `values` (by position), writing it through `map_out` and returning a non-zero
+/// value; returns `0` if the keys contain duplicates.
 ///
 /// [`enif_make_map_from_arrays`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_map_from_arrays) — NIF 2.14 — OTP 21
 #[inline]
