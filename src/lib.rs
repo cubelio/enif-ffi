@@ -16,7 +16,7 @@
 //! - `ERL_NIF_SELECT_READ` → [`SelectFlags::READ`]
 //!
 //! A bare name that would collide with a Rust keyword or a `std` prelude item
-//! takes a trailing underscore: `ErlNifOption` → [`Option_`], `enif_self` →
+//! takes a trailing underscore: `ErlNifOption` → `Option_`, `enif_self` →
 //! `self_`.
 //!
 //! The public surface is flat: everything is re-exported to the crate root.

@@ -25,7 +25,11 @@ use crate::types::*;
 // NIF 0.1 / 1.0 — core term, binary, integer, atom, list/tuple
 // ===========================================================================
 
-/// Returns the pointer to the private data that was set by `load` or `upgrade`.
+/// The library's private data pointer.
+///
+/// Returns the pointer last stored through the `*priv_data` out-parameter of the
+/// module's `load` or `upgrade` callback, or null if none was set. The same
+/// pointer is shared by every NIF call into the library.
 ///
 /// [`enif_priv_data`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_priv_data) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -33,7 +37,10 @@ pub unsafe fn priv_data(env: *mut Env) -> *mut c_void {
     unsafe { (api().priv_data)(env) }
 }
 
-/// Allocates memory of `size` bytes.
+/// Allocates a block of memory from the BEAM allocator.
+///
+/// Returns a pointer to at least `size` bytes, or null on failure. The block is
+/// owned by the caller and is not garbage-collected; release it with [`free`].
 ///
 /// [`enif_alloc`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_alloc) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -41,7 +48,11 @@ pub unsafe fn alloc(size: usize) -> *mut c_void {
     unsafe { (api().alloc)(size) }
 }
 
-/// Frees memory allocated by `enif_alloc`.
+/// Frees memory from the BEAM allocator.
+///
+/// Releases a block previously returned by [`alloc`] or [`realloc`]. Passing a
+/// pointer not obtained from those, or freeing the same block twice, is
+/// undefined behavior.
 ///
 /// [`enif_free`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_free) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -49,7 +60,9 @@ pub unsafe fn free(ptr: *mut c_void) {
     unsafe { (api().free)(ptr) }
 }
 
-/// Returns `true` if `term` is an atom.
+/// Tests whether a term is an atom.
+///
+/// Returns a non-zero value if `term` is an atom, `0` otherwise.
 ///
 /// [`enif_is_atom`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_atom) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -57,7 +70,9 @@ pub unsafe fn is_atom(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_atom)(env, term) }
 }
 
-/// Returns `true` if `term` is a binary.
+/// Tests whether a term is a binary.
+///
+/// Returns a non-zero value if `term` is a binary, `0` otherwise.
 ///
 /// [`enif_is_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_binary) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -65,7 +80,10 @@ pub unsafe fn is_binary(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_binary)(env, term) }
 }
 
-/// Returns `true` if `term` is a reference.
+/// Tests whether a term is a reference.
+///
+/// Returns a non-zero value if `term` is a reference — as made by [`make_ref`]
+/// or `erlang:make_ref/0` — and `0` otherwise.
 ///
 /// [`enif_is_ref`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_ref) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -73,7 +91,12 @@ pub unsafe fn is_ref(env: *mut Env, term: Term) -> c_int {
     unsafe { (api().is_ref)(env, term) }
 }
 
-/// Initializes the structure pointed to by `bin` with information about binary term `bin_term`. The data pointed to by `bin` is transient and does not need to be released unless it has been later reallocated with `enif_realloc_binary`.
+/// Inspects the contents of a binary term.
+///
+/// On success fills `bin` with the byte count and a read-only data pointer for
+/// `bin_term` and returns a non-zero value; returns `0` if `bin_term` is not a
+/// binary. The data is valid for the rest of the NIF call and needs no release
+/// unless it is later grown into an owned binary with [`realloc_binary`].
 ///
 /// [`enif_inspect_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_inspect_binary) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -81,7 +104,12 @@ pub unsafe fn inspect_binary(env: *mut Env, bin_term: Term, bin: *mut Binary) ->
     unsafe { (api().inspect_binary)(env, bin_term, bin) }
 }
 
-/// Allocates a new binary of size `size` bytes. Initializes the structure pointed to by `bin` to refer to the allocated binary.
+/// Allocates a new, mutable binary.
+///
+/// Allocates `size` bytes and initializes `bin` to refer to them, returning a
+/// non-zero value on success or `0` on failure. The binary is owned by the
+/// caller until it is handed to a term with [`make_binary`] or discarded with
+/// [`release_binary`].
 ///
 /// [`enif_alloc_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_alloc_binary) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -89,7 +117,12 @@ pub unsafe fn alloc_binary(size: usize, bin: *mut Binary) -> c_int {
     unsafe { (api().alloc_binary)(size, bin) }
 }
 
-/// Changes the size of a binary `bin`. The source binary can be read-only, in which case it is left untouched and a mutable copy is allocated and assigned to `*bin`.
+/// Resizes a mutable binary.
+///
+/// Changes `bin` to `size` bytes, preserving the existing data up to the smaller
+/// of the two lengths. If `bin` currently refers to read-only data it is left
+/// untouched and a fresh mutable copy is assigned in its place. Returns a
+/// non-zero value on success or `0` on failure.
 ///
 /// [`enif_realloc_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_realloc_binary) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -97,7 +130,11 @@ pub unsafe fn realloc_binary(bin: *mut Binary, size: usize) -> c_int {
     unsafe { (api().realloc_binary)(bin, size) }
 }
 
-/// Releases a binary obtained from `enif_alloc_binary`.
+/// Releases a mutable binary.
+///
+/// Frees a binary previously initialized by [`alloc_binary`] or
+/// [`realloc_binary`] that has not been transferred to a term with
+/// [`make_binary`]. Do not release a binary obtained from [`inspect_binary`].
 ///
 /// [`enif_release_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_release_binary) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -105,7 +142,11 @@ pub unsafe fn release_binary(bin: *mut Binary) {
     unsafe { (api().release_binary)(bin) }
 }
 
-/// Sets `*ip` to the integer value of `term`.
+/// Decodes a fixed-width signed integer from a term.
+///
+/// If `term` is an integer that fits in a C `int`, writes it through `ip` and
+/// returns a non-zero value; otherwise leaves `*ip` untouched and returns `0`
+/// (a float, a non-integer, or a bignum that overflows the range).
 ///
 /// [`enif_get_int`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_int) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -113,7 +154,11 @@ pub unsafe fn get_int(env: *mut Env, term: Term, ip: *mut c_int) -> c_int {
     unsafe { (api().get_int)(env, term, ip) }
 }
 
-/// Sets `*ip` to the unsigned long integer value of `term`.
+/// Decodes an unsigned long integer from a term.
+///
+/// If `term` is a non-negative integer that fits in a C `unsigned long`, writes
+/// it through `ip` and returns a non-zero value; otherwise leaves `*ip`
+/// untouched and returns `0`.
 ///
 /// [`enif_get_ulong`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_ulong) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -121,7 +166,11 @@ pub unsafe fn get_ulong(env: *mut Env, term: Term, ip: *mut c_ulong) -> c_int {
     unsafe { (api().get_ulong)(env, term, ip) }
 }
 
-/// Sets `*dp` to the floating-point value of `term`.
+/// Decodes a floating-point value from a term.
+///
+/// If `term` is a float, writes it through `dp` and returns a non-zero value;
+/// otherwise leaves `*dp` untouched and returns `0`. Integer terms are not
+/// accepted.
 ///
 /// [`enif_get_double`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_double) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -129,7 +178,11 @@ pub unsafe fn get_double(env: *mut Env, term: Term, dp: *mut f64) -> c_int {
     unsafe { (api().get_double)(env, term, dp) }
 }
 
-/// Sets `*head` and `*tail` from list `list`.
+/// Splits a non-empty list into its head and tail.
+///
+/// If `list` is a non-empty list, writes its first element through `head` and
+/// the remainder through `tail` and returns a non-zero value; returns `0` for
+/// the empty list or a non-list term.
 ///
 /// [`enif_get_list_cell`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_list_cell) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -137,7 +190,12 @@ pub unsafe fn get_list_cell(env: *mut Env, list: Term, head: *mut Term, tail: *m
     unsafe { (api().get_list_cell)(env, list, head, tail) }
 }
 
-/// If `term` is a tuple, this function sets `*array` to point to an array containing the elements of the tuple, and sets `*arity` to the number of elements. Notice that the array is read-only and `(*array)[N-1]` is the Nth element of the tuple.
+/// Borrows the elements of a tuple.
+///
+/// If `term` is a tuple, sets `array` to a read-only pointer to its elements and
+/// `arity` to their count, returning a non-zero value; returns `0` otherwise.
+/// Element N is `(*array)[N-1]`, and the array is valid for the rest of the NIF
+/// call.
 ///
 /// [`enif_get_tuple`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_get_tuple) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -150,7 +208,11 @@ pub unsafe fn get_tuple(
     unsafe { (api().get_tuple)(env, term, arity, array) }
 }
 
-/// Returns `true` if the two terms are identical. Corresponds to the Erlang operators `=:=` and `=/=`.
+/// Tests two terms for exact equality.
+///
+/// Returns a non-zero value if `lhs` and `rhs` are identical, matching the
+/// Erlang `=:=` operator — so the integer `1` and the float `1.0` are *not*
+/// identical.
 ///
 /// [`enif_is_identical`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_is_identical) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -158,7 +220,11 @@ pub unsafe fn is_identical(lhs: Term, rhs: Term) -> c_int {
     unsafe { (api().is_identical)(lhs, rhs) }
 }
 
-/// Returns an integer < `0` if `lhs` < `rhs`, `0` if `lhs` = `rhs`, and > `0` if `lhs` > `rhs`. Corresponds to the Erlang operators `==`, `/=`, `=<`, `<`, `>=`, and `>` (but not `=:=` or `=/=`).
+/// Orders two terms by Erlang term order.
+///
+/// Returns a negative, zero, or positive value according to whether `lhs` sorts
+/// before, equal to, or after `rhs` under the standard term order — the
+/// `<`/`=<`/`>`/`>=` and arithmetic `==` operators, not `=:=`.
 ///
 /// [`enif_compare`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_compare) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -166,7 +232,11 @@ pub unsafe fn compare(lhs: Term, rhs: Term) -> c_int {
     unsafe { (api().compare)(lhs, rhs) }
 }
 
-/// Makes a binary term from `bin`. Any ownership of the binary data is transferred to the created term and `bin` is to be considered read-only for the rest of the NIF call and then as released.
+/// Builds a binary term from a mutable binary.
+///
+/// Transfers ownership of `bin`'s data into a new binary term and returns it.
+/// After the call `bin` is read-only for the rest of the NIF call and must not
+/// be passed to [`release_binary`].
 ///
 /// [`enif_make_binary`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_binary) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -174,7 +244,12 @@ pub unsafe fn make_binary(env: *mut Env, bin: *mut Binary) -> Term {
     unsafe { (api().make_binary)(env, bin) }
 }
 
-/// Makes a `badarg` exception to be returned from a NIF, and associates it with environment `env`. Once a NIF or any function it calls invokes `enif_make_badarg`, the runtime ensures that a `badarg` exception is raised when the NIF returns, even if the NIF attempts to return a non-exception term instead.
+/// Raises a `badarg` exception when the NIF returns.
+///
+/// Associates a pending `badarg` with `env`; once invoked, the runtime raises
+/// `badarg` on return regardless of the term the NIF actually returns. The
+/// returned term is a convenience for returning directly. For arbitrary
+/// exception terms see [`raise_exception`].
 ///
 /// [`enif_make_badarg`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_badarg) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -182,7 +257,10 @@ pub unsafe fn make_badarg(env: *mut Env) -> Term {
     unsafe { (api().make_badarg)(env) }
 }
 
-/// Creates an integer term.
+/// Builds an Erlang integer from a 32-bit signed value.
+///
+/// Constructs the integer term in `env`; always succeeds. For values outside the
+/// `c_int` range use [`make_int64`] or [`make_uint64`].
 ///
 /// [`enif_make_int`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_int) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -190,7 +268,9 @@ pub unsafe fn make_int(env: *mut Env, i: c_int) -> Term {
     unsafe { (api().make_int)(env, i) }
 }
 
-/// Creates an integer term from an `unsigned long int`.
+/// Builds an Erlang integer from an unsigned long value.
+///
+/// Constructs the integer term in `env`; always succeeds.
 ///
 /// [`enif_make_ulong`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_ulong) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -198,7 +278,11 @@ pub unsafe fn make_ulong(env: *mut Env, i: c_ulong) -> Term {
     unsafe { (api().make_ulong)(env, i) }
 }
 
-/// Creates a floating-point term from a `double`. If argument `double` is not finite or is NaN, `enif_make_double` invokes `enif_make_badarg`.
+/// Builds an Erlang float from a `double`.
+///
+/// Constructs the float term in `env`. If the value is infinite or NaN — which
+/// Erlang floats cannot represent — a `badarg` is raised on return, as if via
+/// [`make_badarg`].
 ///
 /// [`enif_make_double`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_double) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -206,7 +290,11 @@ pub unsafe fn make_double(env: *mut Env, d: f64) -> Term {
     unsafe { (api().make_double)(env, d) }
 }
 
-/// Creates an atom term from the NUL-terminated C-string `name` with ISO Latin-1 encoding. If the length of `name` exceeds the maximum length allowed for an atom (255 characters), `enif_make_atom` invokes `enif_make_badarg`.
+/// Builds an atom from a Latin-1 C string.
+///
+/// Creates, or reuses, the atom named by the NUL-terminated `name`, interpreted
+/// as ISO Latin-1. A name longer than the 255-character atom limit raises
+/// `badarg` on return. For a length-counted name see [`make_atom_len`].
 ///
 /// [`enif_make_atom`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_atom) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -214,7 +302,12 @@ pub unsafe fn make_atom(env: *mut Env, name: *const c_char) -> Term {
     unsafe { (api().make_atom)(env, name) }
 }
 
-/// Tries to create the term of an already existing atom from the NUL-terminated C-string `name` with encoding.
+/// Looks up an already-existing atom by name.
+///
+/// If an atom named by the NUL-terminated `name`, in the given [`CharEncoding`],
+/// already exists, writes it through `atom` and returns a non-zero value; returns
+/// `0` without creating one otherwise. Useful to avoid growing the atom table
+/// from untrusted input.
 ///
 /// [`enif_make_existing_atom`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_existing_atom) — NIF 1.0 — OTP R13B04
 #[inline]
@@ -227,7 +320,10 @@ pub unsafe fn make_existing_atom(
     unsafe { (api().make_existing_atom)(env, name, atom, encoding) }
 }
 
-/// Creates a list cell `[head | tail]`.
+/// Prepends an element to a list.
+///
+/// Builds the cons cell `[head | tail]` in `env` and returns it. `tail` need not
+/// be a proper list.
 ///
 /// [`enif_make_list_cell`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_list_cell) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -235,7 +331,10 @@ pub unsafe fn make_list_cell(env: *mut Env, head: Term, tail: Term) -> Term {
     unsafe { (api().make_list_cell)(env, head, tail) }
 }
 
-/// Creates a list containing the characters of the NUL-terminated string `string` with encoding.
+/// Builds a string as a list of character codepoints.
+///
+/// Creates the Erlang string for the NUL-terminated `string`, in the given
+/// [`CharEncoding`], and returns it as a list of integer codepoints.
 ///
 /// [`enif_make_string`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_string) — NIF 0.1 — OTP R13B03
 #[inline]
@@ -243,7 +342,10 @@ pub unsafe fn make_string(env: *mut Env, string: *const c_char, encoding: CharEn
     unsafe { (api().make_string)(env, string, encoding) }
 }
 
-/// Creates a reference like `erlang:make_ref/0`.
+/// Creates a fresh, unique reference.
+///
+/// Returns a new reference term bound to `env`, equivalent to
+/// `erlang:make_ref/0`.
 ///
 /// [`enif_make_ref`](https://www.erlang.org/doc/apps/erts/erl_nif.html#enif_make_ref) — NIF 1.0 — OTP R13B04
 #[inline]
