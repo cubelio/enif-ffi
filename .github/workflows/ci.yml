@@ -91,9 +91,9 @@ jobs:
         # ladder), and a 2.15 entry loading on a 2.15 BEAM is proven by the
         # windows OTP 22 lane (version negotiation is platform-independent).
         include:
-          - { otp: "24", nif: "2.16", features: "--features enif-ffi/nif_2_16" }
-          - { otp: "26", nif: "2.17", features: "--features enif-ffi/nif_2_17" }
-          - { otp: "29", nif: "2.18", features: "--features enif-ffi/nif_2_18" }
+          - { otp: "24", nif: "2.16", features: "--features nif_2_16" }
+          - { otp: "26", nif: "2.17", features: "--features nif_2_17" }
+          - { otp: "29", nif: "2.18", features: "--features nif_2_18" }
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
@@ -121,9 +121,9 @@ jobs:
         # every rung's offsets against a matching BEAM.
         include:
           - { otp: "22", nif: "2.15", features: "" }
-          - { otp: "24", nif: "2.16", features: "--features enif-ffi/nif_2_16" }
-          - { otp: "26", nif: "2.17", features: "--features enif-ffi/nif_2_17" }
-          - { otp: "29", nif: "2.18", features: "--features enif-ffi/nif_2_18" }
+          - { otp: "24", nif: "2.16", features: "--features nif_2_16" }
+          - { otp: "26", nif: "2.17", features: "--features nif_2_17" }
+          - { otp: "29", nif: "2.18", features: "--features nif_2_18" }
     steps:
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable

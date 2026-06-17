@@ -190,6 +190,35 @@ unsafe extern "C" fn nif_notify(env: *mut Env, _argc: c_int, _argv: *const Term)
     unsafe { make_atom(env, c"ok".as_ptr()) }
 }
 
+/// minor() -> the NIF minor version this NIF was built against (MINOR_VERSION,
+/// which is itself feature-gated). The harness reads this to decide which
+/// version-gated functions below it may call against the loaded build.
+unsafe extern "C" fn nif_minor(env: *mut Env, _argc: c_int, _argv: *const Term) -> Term {
+    unsafe { make_int(env, MINOR_VERSION) }
+}
+
+/// new_atom() -> made217. Exercises make_new_atom (NIF 2.17); only registered
+/// when built with nif_2_17.
+#[cfg(feature = "nif_2_17")]
+unsafe extern "C" fn nif_new_atom(env: *mut Env, _argc: c_int, _argv: *const Term) -> Term {
+    let mut a: Term = 0;
+    if unsafe { make_new_atom(env, c"made217".as_ptr(), &mut a, CharEncoding::Latin1) } == 0 {
+        return unsafe { make_badarg(env) };
+    }
+    a
+}
+
+/// tsize(T) -> byte size of T's term storage. Exercises term_size (NIF 2.18);
+/// only registered when built with nif_2_18.
+#[cfg(feature = "nif_2_18")]
+unsafe extern "C" fn nif_tsize(env: *mut Env, argc: c_int, argv: *const Term) -> Term {
+    if argc != 1 {
+        return unsafe { make_badarg(env) };
+    }
+    let n = unsafe { term_size(*argv) };
+    unsafe { make_int(env, n as c_int) }
+}
+
 // ---------------------------------------------------------------------------
 // Load callback
 // ---------------------------------------------------------------------------
@@ -210,7 +239,7 @@ unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: T
 enif_ffi::nif_init!(build_entry);
 
 fn build_entry() -> *const Entry {
-    let funcs = Box::leak(Box::new([
+    let mut funcs = vec![
         Func {
             name: c"add".as_ptr(),
             arity: 2,
@@ -295,7 +324,30 @@ fn build_entry() -> *const Entry {
             fptr: nif_notify,
             flags: 0,
         },
-    ]));
+        Func {
+            name: c"minor".as_ptr(),
+            arity: 0,
+            fptr: nif_minor,
+            flags: 0,
+        },
+    ];
+    // Version-gated functions are registered only when built at their rung; the
+    // harness gates its calls on minor() so it never invokes an absent stub.
+    #[cfg(feature = "nif_2_17")]
+    funcs.push(Func {
+        name: c"new_atom".as_ptr(),
+        arity: 0,
+        fptr: nif_new_atom,
+        flags: 0,
+    });
+    #[cfg(feature = "nif_2_18")]
+    funcs.push(Func {
+        name: c"tsize".as_ptr(),
+        arity: 1,
+        fptr: nif_tsize,
+        flags: 0,
+    });
+    let funcs = funcs.leak();
     let num = funcs.len() as c_int;
     let funcs_ptr = funcs.as_mut_ptr();
 

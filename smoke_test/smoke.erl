@@ -4,7 +4,7 @@
 -compile({no_auto_import, [map_get/2, map_size/1]}).
 -export([add/2, mk_tuple/0, roundtrip/1, mk_atom/0, check_atom/1,
          mul64/2, halve/1, dup_bin/1, mk_map/0, map_get/2, map_size/1,
-         triple/0, len/1, notify/0, test/0]).
+         triple/0, len/1, notify/0, minor/0, new_atom/0, tsize/1, test/0]).
 -on_load(init/0).
 
 init() ->
@@ -25,6 +25,9 @@ map_size(_) -> erlang:nif_error(not_loaded).
 triple() -> erlang:nif_error(not_loaded).
 len(_) -> erlang:nif_error(not_loaded).
 notify() -> erlang:nif_error(not_loaded).
+minor() -> erlang:nif_error(not_loaded).
+new_atom() -> erlang:nif_error(not_loaded).
+tsize(_) -> erlang:nif_error(not_loaded).
 
 test() ->
     %% scalars and terms
@@ -59,5 +62,18 @@ test() ->
     receive
         pong -> ok
     after 1000 -> erlang:error(no_pong)
+    end,
+    %% version-gated functions: only call those the loaded build registered,
+    %% which minor() (the compiled NIF minor version) tells us.
+    Minor = minor(),
+    if
+        Minor >= 17 -> made217 = new_atom();
+        true -> ok
+    end,
+    if
+        Minor >= 18 ->
+            S = tsize({a, b, c}),
+            true = is_integer(S) andalso S > 0;
+        true -> ok
     end,
     ok.
