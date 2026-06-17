@@ -283,7 +283,9 @@ pub unsafe fn init() -> Result<(), &'static str> {
     Ok(())
 }
 
-/// `SysIOVec` — iovec; on Unix this is `struct iovec`. NIF 2.13 (OTP 20.1).
+/// An iovec; on Unix this is `struct iovec`.
+///
+/// [`SysIOVec`](https://www.erlang.org/doc/apps/erts/erl_nif.html#SysIOVec) — NIF 2.12 — OTP 20.1
 #[repr(C)]
 pub struct SysIOVec {
     pub iov_base: *mut c_void,
