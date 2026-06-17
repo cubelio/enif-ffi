@@ -2,8 +2,8 @@
 //! binding actually loads and runs inside the BEAM (cargo only type-checks it).
 //!
 //! It is also a worked example of a consumer: the function table, the
-//! `ErlNifEntry` builder, and `enif_ffi::loader::nif_init!` to define the
-//! entry point. The same source compiles on Unix and Windows.
+//! `ErlNifEntry` builder, and `enif_ffi::nif_init!` to define the entry
+//! point. The same source compiles on Unix and Windows.
 
 #![deny(unsafe_op_in_unsafe_fn)]
 
@@ -81,7 +81,7 @@ unsafe extern "C" fn load(_env: *mut Env, _priv_data: *mut *mut c_void, _info: T
 // Generates the platform-correct `nif_init` (no-arg on Unix, a callbacks
 // pointer on Windows), resolves the table, then calls `build_entry` — so this
 // file is identical on every platform.
-enif_ffi::loader::nif_init!(build_entry);
+enif_ffi::nif_init!(build_entry);
 
 fn build_entry() -> *const Entry {
     let funcs = Box::leak(Box::new([
