@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, develop]
   pull_request:
   workflow_dispatch:
 
@@ -72,6 +72,23 @@ jobs:
       # lower ones) compiles there.
       - run: rm -f Cargo.lock
       - run: cargo build --features nif_2_18
+
+  cross-32bit:
+    name: cross (32-bit layout)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: i686-unknown-linux-gnu
+      - uses: Swatinem/rust-cache@v2
+      # The 64-bit runners never exercise the pointer-width-dependent layouts —
+      # most importantly `Monitor`, whose length is `sizeof(void*) * 4` and whose
+      # const-assert (size + align) only evaluates the 32-bit case here. A
+      # regression to a hardcoded `[u8; 32]` fails this check. Compile-only (no
+      # 32-bit BEAM to load against); run every rung so each cfg boundary builds.
+      - run: cargo check --target i686-unknown-linux-gnu
+      - run: cargo check --target i686-unknown-linux-gnu --features nif_2_18
 
   smoke:
     name: smoke (OTP ${{ matrix.otp }}, NIF ${{ matrix.nif }})
