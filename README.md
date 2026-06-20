@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/cubelio/enif-ffi/actions/workflows/ci.yml/badge.svg)](https://github.com/cubelio/enif-ffi/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/enif-ffi.svg)](https://crates.io/crates/enif-ffi)
-[![docs](https://img.shields.io/badge/docs-cubelio.github.io-blue)](https://cubelio.github.io/enif-ffi/)
+[![docs.rs](https://img.shields.io/docsrs/enif-ffi)](https://docs.rs/enif-ffi)
+[![docs (master)](https://img.shields.io/badge/docs-master-blue)](https://cubelio.github.io/enif-ffi/)
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](#license)
 ![MSRV](https://img.shields.io/badge/MSRV-1.77-blue)
 
