@@ -225,14 +225,27 @@ pub struct Port {
 
 /// A process-monitor handle.
 ///
-/// A 32-byte opaque value — the C type is also `ErlDrvMonitor` — always passed by
-/// pointer and never interpreted. Produced by [`monitor_process`](crate::monitor_process), ordered with
+/// A `sizeof(void*) * 4`-byte opaque value — the C type is also `ErlDrvMonitor` —
+/// always passed by pointer and never interpreted. Produced by [`monitor_process`](crate::monitor_process), ordered with
 /// [`compare_monitors`](crate::compare_monitors), and turned into a term with [`make_monitor_term`](crate::make_monitor_term).
 ///
+/// The length tracks the C definition `unsigned char data[sizeof(void*)*4]`
+/// (32 bytes on 64-bit, 16 on 32-bit) rather than a hardcoded 32, and the type
+/// carries no forced alignment — the C struct is a bare `char` array (align 1),
+/// so there is none to match.
+///
 /// [`ErlNifMonitor`](https://www.erlang.org/doc/apps/erts/erl_nif.html#ErlNifMonitor) — NIF 2.12 — OTP 20
-#[repr(C, align(8))]
+#[repr(C)]
 #[derive(Clone, Copy)]
-pub struct Monitor(pub [u8; 32]);
+pub struct Monitor(pub [u8; core::mem::size_of::<*const ()>() * 4]);
+
+// Pin the layout to the C ABI so a future edit cannot silently change it: the
+// mismatch would only show as memory corruption at the enif boundary, never a
+// failing test. `sizeof(void*)*4` bytes, align 1 (a bare `char` array).
+const _: () = assert!(
+    core::mem::size_of::<Monitor>() == core::mem::size_of::<*const ()>() * 4
+        && core::mem::align_of::<Monitor>() == 1,
+);
 
 // ---------------------------------------------------------------------------
 // Resource type
